@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  fastboot-web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    volumes:
+      - ./logs:/app/logs
+      - /var/run/usb:/var/run/usb:ro
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    restart: unless-stopped
+    networks:
+      - fastboot-network
+
+  # Serviço opcional para desenvolvimento
+  fastboot-dev:
+    build: .
+    ports:
+      - "5001:5000"
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - JWT_SECRET=dev-secret-key
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+      - /var/run/usb:/var/run/usb:ro
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    command: npm run dev
+    profiles:
+      - dev
+    networks:
+      - fastboot-network
+
+networks:
+  fastboot-network:
+    driver: bridge
+
+volumes:
+  logs:
+    driver: local

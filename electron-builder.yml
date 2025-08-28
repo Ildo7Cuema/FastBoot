@@ -1,0 +1,111 @@
+appId: com.fastboot.factoryreset
+productName: FastBoot Factory Reset
+copyright: Copyright © 2024 FastBoot Team
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - "src/**/*"
+  - "assets/**/*"
+  - "node_modules/**/*"
+  - "package.json"
+
+extraResources:
+  - "assets/**/*"
+
+mac:
+  category: public.app-category.utilities
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  icon: assets/icon.icns
+  darkModeSupport: true
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    NSAppleEventsUsageDescription: "Esta aplicação precisa acessar eventos do sistema para monitorar dispositivos USB."
+    NSCameraUsageDescription: "Esta aplicação não acessa a câmera."
+    NSMicrophoneUsageDescription: "Esta aplicação não acessa o microfone."
+    NSPhotoLibraryUsageDescription: "Esta aplicação não acessa a biblioteca de fotos."
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  icon: assets/icon.ico
+  requestedExecutionLevel: asInvoker
+  signAndEditExecutable: false
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+  nsis:
+    oneClick: false
+    allowToChangeInstallationDirectory: true
+    createDesktopShortcut: true
+    createStartMenuShortcut: true
+    shortcutName: "FastBoot Factory Reset"
+    uninstallDisplayName: "FastBoot Factory Reset"
+    artifactName: "${productName}-${version}-Setup.${ext}"
+    installerIcon: assets/icon.ico
+    uninstallerIcon: assets/icon.ico
+    installerHeaderIcon: assets/icon.ico
+    include: build/installer.nsh
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+    - target: rpm
+      arch:
+        - x64
+  icon: assets/icon.png
+  category: Utility
+  desktop:
+    Name: "FastBoot Factory Reset"
+    Comment: "Software para restauração de fábrica de dispositivos Android"
+    Keywords: "android;fastboot;adb;factory;reset;mobile"
+    Categories: "Utility;System;"
+  maintainer: "FastBoot Team <suporte@fastboot-reset.com>"
+
+publish:
+  provider: github
+  releaseType: release
+  publishAutoUpdate: true
+
+afterSign: scripts/notarize.js
+
+beforeBuild: scripts/before-build.js
+afterBuild: scripts/after-build.js
+
+compression: maximum
+
+removePackageScripts: true
+removePackageKeywords: true
+
+npmRebuild: false
+
+buildDependenciesFromSource: false
+
+electronVersion: "28.0.0"
+
+electronDownload:
+  cache: ~/.cache/electron
+  mirror: https://npm.taobao.org/mirrors/electron/
+
+artifactBuildTimeout: 1200000

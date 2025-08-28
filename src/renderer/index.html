@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FastBoot Factory Reset</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Header -->
+      <header class="app-header">
+        <div class="header-content">
+          <div class="logo-section">
+            <i class="fas fa-mobile-alt logo-icon"></i>
+            <h1 class="app-title">FastBoot Factory Reset</h1>
+          </div>
+          <div class="header-actions">
+            <button id="settingsBtn" class="btn btn-secondary" title="Configurações">
+              <i class="fas fa-cog"></i>
+            </button>
+            <button id="helpBtn" class="btn btn-secondary" title="Ajuda">
+              <i class="fas fa-question-circle"></i>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Status Bar -->
+        <div class="status-bar">
+          <div class="status-item">
+            <i class="fas fa-plug status-icon"></i>
+            <span id="connectionStatus" class="status-text">Verificando conexão...</span>
+          </div>
+          <div class="status-item">
+            <i class="fas fa-tools status-icon"></i>
+            <span id="adbStatus" class="status-text">Verificando ADB...</span>
+          </div>
+          <div class="status-item">
+            <i class="fas fa-clock status-icon"></i>
+            <span id="lastUpdate" class="status-text">--</span>
+          </div>
+        </div>
+
+        <!-- Device Detection Section -->
+        <section class="section device-section">
+          <div class="section-header">
+            <h2><i class="fas fa-search"></i> Detecção de Dispositivos</h2>
+            <button id="detectDevicesBtn" class="btn btn-primary">
+              <i class="fas fa-sync-alt"></i> Detectar Dispositivos
+            </button>
+          </div>
+
+          <div class="device-list" id="deviceList">
+            <div class="no-devices">
+              <i class="fas fa-mobile-alt no-devices-icon"></i>
+              <p>Nenhum dispositivo detectado</p>
+              <p class="no-devices-hint">
+                Conecte um dispositivo Android via USB e habilite a depuração USB
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Operations Section -->
+        <section class="section operations-section">
+          <div class="section-header">
+            <h2><i class="fas fa-cogs"></i> Operações</h2>
+          </div>
+
+          <div class="operations-grid">
+            <div class="operation-card">
+              <div class="operation-icon">
+                <i class="fas fa-power-off"></i>
+              </div>
+              <h3>Reiniciar em Fastboot</h3>
+              <p>Reinicia o dispositivo selecionado no modo bootloader</p>
+              <button id="rebootBootloaderBtn" class="btn btn-warning" disabled>
+                <i class="fas fa-arrow-right"></i> Executar
+              </button>
+            </div>
+
+            <div class="operation-card">
+              <div class="operation-icon danger">
+                <i class="fas fa-trash-alt"></i>
+              </div>
+              <h3>Factory Reset</h3>
+              <p>Restaura o dispositivo para configurações de fábrica</p>
+              <button id="factoryResetBtn" class="btn btn-danger" disabled>
+                <i class="fas fa-exclamation-triangle"></i> Executar
+              </button>
+            </div>
+
+            <div class="operation-card">
+              <div class="operation-icon">
+                <i class="fas fa-info-circle"></i>
+              </div>
+              <h3>Informações do Dispositivo</h3>
+              <p>Exibe informações detalhadas do dispositivo</p>
+              <button id="deviceInfoBtn" class="btn btn-info" disabled>
+                <i class="fas fa-eye"></i> Visualizar
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Progress Section -->
+        <section class="section progress-section" id="progressSection" style="display: none">
+          <div class="section-header">
+            <h2><i class="fas fa-spinner fa-spin"></i> Operação em Andamento</h2>
+          </div>
+
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Iniciando operação...</div>
+            <button id="cancelOperationBtn" class="btn btn-secondary">
+              <i class="fas fa-times"></i> Cancelar
+            </button>
+          </div>
+        </section>
+
+        <!-- Logs Section -->
+        <section class="section logs-section">
+          <div class="section-header">
+            <h2><i class="fas fa-list-alt"></i> Logs e Histórico</h2>
+            <div class="logs-actions">
+              <button id="refreshLogsBtn" class="btn btn-secondary">
+                <i class="fas fa-sync-alt"></i> Atualizar
+              </button>
+              <button id="exportLogsBtn" class="btn btn-secondary">
+                <i class="fas fa-download"></i> Exportar
+              </button>
+              <button id="clearLogsBtn" class="btn btn-secondary">
+                <i class="fas fa-trash"></i> Limpar
+              </button>
+            </div>
+          </div>
+
+          <div class="logs-container">
+            <div class="logs-toolbar">
+              <select id="logLevelFilter" class="log-filter">
+                <option value="all">Todos os níveis</option>
+                <option value="DEBUG">Debug</option>
+                <option value="INFO">Info</option>
+                <option value="WARN">Warning</option>
+                <option value="ERROR">Error</option>
+              </select>
+              <input
+                type="text"
+                id="logSearch"
+                class="log-search"
+                placeholder="Buscar nos logs..."
+              />
+            </div>
+
+            <div class="logs-content" id="logsContent">
+              <div class="no-logs">
+                <i class="fas fa-file-alt no-logs-icon"></i>
+                <p>Nenhum log disponível</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Footer -->
+      <footer class="app-footer">
+        <div class="footer-content">
+          <span class="footer-text">FastBoot Factory Reset v1.0.0</span>
+          <span class="footer-text">Compatível com Windows e macOS</span>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Modals -->
+    <div id="deviceInfoModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Informações do Dispositivo</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body" id="deviceInfoContent">
+          <!-- Conteúdo será preenchido dinamicamente -->
+        </div>
+      </div>
+    </div>
+
+    <div id="confirmationModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Confirmação</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="confirmation-content">
+            <i class="fas fa-exclamation-triangle confirmation-icon"></i>
+            <h4 id="confirmationTitle">Tem certeza?</h4>
+            <p id="confirmationMessage">Esta operação não pode ser desfeita.</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="confirmBtn" class="btn btn-danger">Confirmar</button>
+          <button id="cancelBtn" class="btn btn-secondary">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="notification-container"></div>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

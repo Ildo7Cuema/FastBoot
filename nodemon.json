@@ -1,0 +1,28 @@
+{
+  "watch": [
+    "server/",
+    "src/modules/"
+  ],
+  "ext": "js,json",
+  "ignore": [
+    "node_modules/",
+    "client/",
+    "coverage/",
+    "*.test.js",
+    "*.spec.js"
+  ],
+  "env": {
+    "NODE_ENV": "development",
+    "PORT": "5000"
+  },
+  "exec": "node server/index.js",
+  "delay": "1000",
+  "verbose": true,
+  "colours": true,
+  "restartable": "rs",
+  "events": {
+    "restart": "echo '🔄 Servidor reiniciado'",
+    "crash": "echo '💥 Servidor travou'",
+    "exit": "echo '👋 Servidor encerrado'"
+  }
+}

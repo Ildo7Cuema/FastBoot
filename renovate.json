@@ -1,0 +1,74 @@
+{
+  "extends": [
+    "config:base",
+    ":semanticCommits",
+    ":enablePreCommit"
+  ],
+  
+  "schedule": [
+    "before 4am on monday"
+  ],
+  
+  "timezone": "America/Sao_Paulo",
+  
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["major"],
+      "matchPackageNames": ["react", "react-dom"],
+      "enabled": false
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "matchPackageNames": ["express", "socket.io"],
+      "enabled": false
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchPackageNames": ["react", "react-dom", "express", "socket.io"],
+      "automerge": true
+    },
+    {
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    },
+    {
+      "matchPackageNames": ["@types/*"],
+      "automerge": true
+    }
+  ],
+  
+  "assignees": ["@seu-usuario"],
+  "reviewers": ["@seu-usuario"],
+  
+  "commitMessageAction": "Update",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "to {{newVersion}}",
+  
+  "labels": ["dependencies", "renovate"],
+  
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 10,
+  
+  "rangeStrategy": "bump",
+  
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 4am on monday"]
+  },
+  
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "assignees": ["@seu-usuario"],
+    "labels": ["security", "vulnerability"]
+  },
+  
+  "git-submodules": {
+    "enabled": true
+  },
+  
+  "platformAutomerge": true,
+  
+  "repositories": [
+    "seu-usuario/fastboot-factory-reset-web"
+  ]
+}
