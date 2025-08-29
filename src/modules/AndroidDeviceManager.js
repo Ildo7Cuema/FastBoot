@@ -28,7 +28,10 @@ class AndroidDeviceManager {
       const possiblePaths = [
         'C:\\Android\\platform-tools\\adb.exe',
         'C:\\Program Files\\Android\\platform-tools\\adb.exe',
-        path.join(process.env.USERPROFILE, 'AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe')
+        path.join(
+          process.env.USERPROFILE,
+          'AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe'
+        ),
       ];
 
       for (const path of possiblePaths) {
@@ -41,7 +44,7 @@ class AndroidDeviceManager {
         '/usr/local/bin/adb',
         '/opt/homebrew/bin/adb',
         path.join(process.env.HOME, 'Library/Android/sdk/platform-tools/adb'),
-        path.join(process.env.HOME, 'Android/Sdk/platform-tools/adb')
+        path.join(process.env.HOME, 'Android/Sdk/platform-tools/adb'),
       ];
 
       for (const path of possiblePaths) {
@@ -51,7 +54,9 @@ class AndroidDeviceManager {
       }
     }
 
-    this.logger.warn('ADB não encontrado no sistema. Será necessário instalar.');
+    this.logger.warn(
+      'ADB não encontrado no sistema. Será necessário instalar.'
+    );
     return null;
   }
 
@@ -60,7 +65,9 @@ class AndroidDeviceManager {
    */
   checkCommandInPath(command) {
     try {
-      require('child_process').execSync(`which ${command}`, { stdio: 'ignore' });
+      require('child_process').execSync(`which ${command}`, {
+        stdio: 'ignore',
+      });
       return true;
     } catch {
       return false;
@@ -76,7 +83,7 @@ class AndroidDeviceManager {
     }
 
     try {
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         exec(`${this.adbPath} version`, (error, stdout, stderr) => {
           if (error) {
             this.logger.error('Erro ao verificar versão do ADB:', error);
@@ -98,10 +105,12 @@ class AndroidDeviceManager {
    */
   async detectDevices() {
     if (!this.adbPath) {
-      throw new Error('ADB não está disponível. Instale o Android SDK Platform Tools.');
+      throw new Error(
+        'ADB não está disponível. Instale o Android SDK Platform Tools.'
+      );
     }
 
-            return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       exec(`${this.adbPath} devices -l`, async (error, stdout, stderr) => {
         if (error) {
           this.logger.error('Erro ao executar adb devices:', error);
@@ -128,7 +137,7 @@ class AndroidDeviceManager {
                   model: this.extractModel(parts),
                   manufacturer: this.extractManufacturer(parts),
                   androidVersion: await this.getAndroidVersion(deviceId),
-                  connected: true
+                  connected: true,
                 };
 
                 devices.push(device);
@@ -173,14 +182,17 @@ class AndroidDeviceManager {
    */
   async getAndroidVersion(deviceId) {
     try {
-      return new Promise((resolve) => {
-        exec(`${this.adbPath} -s ${deviceId} shell getprop ro.build.version.release`, (error, stdout, stderr) => {
-          if (error) {
-            resolve('Unknown');
-          } else {
-            resolve(stdout.trim());
+      return new Promise(resolve => {
+        exec(
+          `${this.adbPath} -s ${deviceId} shell getprop ro.build.version.release`,
+          (error, stdout, stderr) => {
+            if (error) {
+              resolve('Unknown');
+            } else {
+              resolve(stdout.trim());
+            }
           }
-        });
+        );
       });
     } catch {
       return 'Unknown';
@@ -200,17 +212,27 @@ class AndroidDeviceManager {
     }
 
     return new Promise((resolve, reject) => {
-      this.logger.info(`Reiniciando dispositivo ${deviceId} para bootloader...`);
+      this.logger.info(
+        `Reiniciando dispositivo ${deviceId} para bootloader...`
+      );
 
-      exec(`${this.adbPath} -s ${deviceId} reboot bootloader`, (error, stdout, stderr) => {
-        if (error) {
-          this.logger.error('Erro ao reiniciar para bootloader:', error);
-          reject(error);
-        } else {
-          this.logger.info(`Dispositivo ${deviceId} reiniciado para bootloader com sucesso`);
-          resolve({ success: true, message: 'Dispositivo reiniciado para bootloader' });
+      exec(
+        `${this.adbPath} -s ${deviceId} reboot bootloader`,
+        (error, stdout, stderr) => {
+          if (error) {
+            this.logger.error('Erro ao reiniciar para bootloader:', error);
+            reject(error);
+          } else {
+            this.logger.info(
+              `Dispositivo ${deviceId} reiniciado para bootloader com sucesso`
+            );
+            resolve({
+              success: true,
+              message: 'Dispositivo reiniciado para bootloader',
+            });
+          }
         }
-      });
+      );
     });
   }
 
@@ -290,13 +312,13 @@ class AndroidDeviceManager {
     try {
       const [buildProps, batteryInfo] = await Promise.all([
         this.getBuildProperties(deviceId),
-        this.getBatteryInfo(deviceId)
+        this.getBatteryInfo(deviceId),
       ]);
 
       return {
         ...device,
         buildProperties: buildProps,
-        batteryInfo: batteryInfo
+        batteryInfo: batteryInfo,
       };
     } catch (error) {
       this.logger.error('Erro ao obter informações do dispositivo:', error);
@@ -308,24 +330,27 @@ class AndroidDeviceManager {
    * Obtém propriedades de build do dispositivo
    */
   async getBuildProperties(deviceId) {
-    return new Promise((resolve) => {
-      exec(`${this.adbPath} -s ${deviceId} shell getprop`, (error, stdout, stderr) => {
-        if (error) {
-          resolve({});
-        } else {
-          const props = {};
-          const lines = stdout.split('\n');
+    return new Promise(resolve => {
+      exec(
+        `${this.adbPath} -s ${deviceId} shell getprop`,
+        (error, stdout, stderr) => {
+          if (error) {
+            resolve({});
+          } else {
+            const props = {};
+            const lines = stdout.split('\n');
 
-          for (const line of lines) {
-            const match = line.match(/\[([^\]]+)\]:\s*\[([^\]]*)\]/);
-            if (match) {
-              props[match[1]] = match[2];
+            for (const line of lines) {
+              const match = line.match(/\[([^\]]+)\]:\s*\[([^\]]*)\]/);
+              if (match) {
+                props[match[1]] = match[2];
+              }
             }
-          }
 
-          resolve(props);
+            resolve(props);
+          }
         }
-      });
+      );
     });
   }
 
@@ -333,25 +358,296 @@ class AndroidDeviceManager {
    * Obtém informações da bateria do dispositivo
    */
   async getBatteryInfo(deviceId) {
-    return new Promise((resolve) => {
-      exec(`${this.adbPath} -s ${deviceId} shell dumpsys battery`, (error, stdout, stderr) => {
-        if (error) {
-          resolve({});
-        } else {
-          const batteryInfo = {};
-          const lines = stdout.split('\n');
+    return new Promise(resolve => {
+      exec(
+        `${this.adbPath} -s ${deviceId} shell dumpsys battery`,
+        (error, stdout, stderr) => {
+          if (error) {
+            resolve({});
+          } else {
+            const batteryInfo = {};
+            const lines = stdout.split('\n');
 
-          for (const line of lines) {
-            if (line.includes('level:')) {
-              batteryInfo.level = parseInt(line.split(':')[1].trim());
-            } else if (line.includes('status:')) {
-              batteryInfo.status = line.split(':')[1].trim();
+            for (const line of lines) {
+              if (line.includes('level:')) {
+                batteryInfo.level = parseInt(line.split(':')[1].trim());
+              } else if (line.includes('status:')) {
+                batteryInfo.status = line.split(':')[1].trim();
+              }
             }
-          }
 
-          resolve(batteryInfo);
+            resolve(batteryInfo);
+          }
+        }
+      );
+    });
+  }
+
+  /**
+   * Reinicia o dispositivo
+   */
+  async rebootDevice(deviceId) {
+    return new Promise((resolve, reject) => {
+      this.logger.info(`Reiniciando dispositivo ${deviceId}...`);
+
+      exec(`${this.adbPath} -s ${deviceId} reboot`, (error, stdout, stderr) => {
+        if (error) {
+          this.logger.error('Erro ao reiniciar dispositivo:', error);
+          reject(error);
+        } else {
+          this.logger.info(`Dispositivo ${deviceId} reiniciado com sucesso`);
+          resolve({ success: true, message: 'Dispositivo reiniciado' });
         }
       });
+    });
+  }
+
+  /**
+   * Executa comando ADB customizado
+   */
+  async executeCommand(deviceId, command) {
+    return new Promise((resolve, reject) => {
+      // Sanitizar comando
+      const sanitizedCommand = command.replace(/[;&|`$]/g, '');
+      const fullCommand = `${this.adbPath} -s ${deviceId} shell ${sanitizedCommand}`;
+
+      this.logger.info(`Executando comando: ${fullCommand}`);
+
+      exec(fullCommand, { timeout: 30000 }, (error, stdout, stderr) => {
+        if (error) {
+          this.logger.error('Erro ao executar comando:', error);
+          reject(error);
+        } else {
+          resolve({
+            stdout: stdout.trim(),
+            stderr: stderr.trim(),
+          });
+        }
+      });
+    });
+  }
+
+  /**
+   * Captura screenshot do dispositivo
+   */
+  async captureScreenshot(deviceId) {
+    return new Promise((resolve, reject) => {
+      const tempPath = path.join(
+        os.tmpdir(),
+        `screenshot-${deviceId}-${Date.now()}.png`
+      );
+      const devicePath = '/sdcard/screenshot.png';
+
+      // Capturar screenshot no dispositivo
+      exec(
+        `${this.adbPath} -s ${deviceId} shell screencap -p ${devicePath}`,
+        error => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          // Transferir para o computador
+          exec(
+            `${this.adbPath} -s ${deviceId} pull ${devicePath} ${tempPath}`,
+            error => {
+              if (error) {
+                reject(error);
+                return;
+              }
+
+              // Ler arquivo e limpar
+              fs.readFile(tempPath, (err, data) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  fs.unlink(tempPath, () => {});
+                  exec(
+                    `${this.adbPath} -s ${deviceId} shell rm ${devicePath}`,
+                    () => {}
+                  );
+                  resolve(data);
+                }
+              });
+            }
+          );
+        }
+      );
+    });
+  }
+
+  /**
+   * Instala APK no dispositivo
+   */
+  async installAPK(deviceId, apkPath) {
+    return new Promise((resolve, reject) => {
+      this.logger.info(
+        `Instalando APK ${apkPath} no dispositivo ${deviceId}...`
+      );
+
+      exec(
+        `${this.adbPath} -s ${deviceId} install -r "${apkPath}"`,
+        { timeout: 120000 }, // 2 minutos de timeout
+        (error, stdout, stderr) => {
+          if (error) {
+            this.logger.error('Erro ao instalar APK:', error);
+            reject(error);
+          } else {
+            const success = stdout.includes('Success');
+            resolve({
+              success,
+              output: stdout.trim(),
+            });
+          }
+        }
+      );
+    });
+  }
+
+  /**
+   * Cria backup do dispositivo
+   */
+  async createBackup(deviceId, options = {}) {
+    return new Promise((resolve, reject) => {
+      const backupDir = path.join(__dirname, '../../backups');
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+      }
+
+      const backupPath = path.join(
+        backupDir,
+        `backup-${deviceId}-${Date.now()}.ab`
+      );
+      let backupCmd = `${this.adbPath} -s ${deviceId} backup -f "${backupPath}"`;
+
+      if (options.includeApk) backupCmd += ' -apk';
+      if (options.includeObb) backupCmd += ' -obb';
+      if (options.includeShared) backupCmd += ' -shared';
+      if (options.includeSystem) backupCmd += ' -system';
+      else backupCmd += ' -nosystem';
+
+      backupCmd += ' -all';
+
+      this.logger.info(`Criando backup: ${backupCmd}`);
+
+      exec(
+        backupCmd,
+        { timeout: 600000 }, // 10 minutos de timeout
+        (error, stdout, stderr) => {
+          if (error) {
+            this.logger.error('Erro ao criar backup:', error);
+            reject(error);
+          } else {
+            resolve(backupPath);
+          }
+        }
+      );
+    });
+  }
+
+  /**
+   * Restaura backup no dispositivo
+   */
+  async restoreBackup(deviceId, backupPath) {
+    return new Promise((resolve, reject) => {
+      this.logger.info(
+        `Restaurando backup ${backupPath} no dispositivo ${deviceId}...`
+      );
+
+      exec(
+        `${this.adbPath} -s ${deviceId} restore "${backupPath}"`,
+        { timeout: 600000 }, // 10 minutos de timeout
+        (error, stdout, stderr) => {
+          if (error) {
+            this.logger.error('Erro ao restaurar backup:', error);
+            reject(error);
+          } else {
+            resolve({
+              success: true,
+              message: 'Backup restaurado com sucesso',
+            });
+          }
+        }
+      );
+    });
+  }
+
+  /**
+   * Lista pacotes instalados
+   */
+  async getInstalledPackages(deviceId, type = 'all') {
+    return new Promise((resolve, reject) => {
+      let cmd = `${this.adbPath} -s ${deviceId} shell pm list packages`;
+
+      if (type === 'system') {
+        cmd += ' -s';
+      } else if (type === 'third-party') {
+        cmd += ' -3';
+      }
+
+      exec(cmd, (error, stdout, stderr) => {
+        if (error) {
+          reject(error);
+        } else {
+          const packages = stdout
+            .split('\n')
+            .filter(line => line.startsWith('package:'))
+            .map(line => line.replace('package:', '').trim())
+            .filter(pkg => pkg.length > 0);
+
+          resolve(packages);
+        }
+      });
+    });
+  }
+
+  /**
+   * Desinstala pacote
+   */
+  async uninstallPackage(deviceId, packageName) {
+    return new Promise((resolve, reject) => {
+      this.logger.info(
+        `Desinstalando pacote ${packageName} do dispositivo ${deviceId}...`
+      );
+
+      exec(
+        `${this.adbPath} -s ${deviceId} uninstall ${packageName}`,
+        (error, stdout, stderr) => {
+          if (error) {
+            this.logger.error('Erro ao desinstalar pacote:', error);
+            reject(error);
+          } else {
+            const success = stdout.includes('Success');
+            resolve({
+              success,
+              output: stdout.trim(),
+            });
+          }
+        }
+      );
+    });
+  }
+
+  /**
+   * Ativa/desativa modo desenvolvedor
+   */
+  async setDeveloperMode(deviceId, enabled) {
+    return new Promise((resolve, reject) => {
+      const value = enabled ? '1' : '0';
+
+      exec(
+        `${this.adbPath} -s ${deviceId} shell settings put global development_settings_enabled ${value}`,
+        (error, stdout, stderr) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve({
+              success: true,
+              enabled,
+            });
+          }
+        }
+      );
     });
   }
 }

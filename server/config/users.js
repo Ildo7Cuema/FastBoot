@@ -1,47 +1,52 @@
-const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 
-// Gerar hash da senha 'admin123'
-const generateAdminPassword = async () => {
-  const password = 'admin123';
-  const saltRounds = 10;
-  const hash = await bcrypt.hash(password, saltRounds);
-  return hash;
-};
+const USERS_FILE = path.join(__dirname, '../data/users.json');
+const LOGIN_ATTEMPTS_FILE = path.join(__dirname, '../data/login_attempts.json');
 
-// Usuários padrão (em produção, usar banco de dados)
-const users = [
-  {
-    id: 1,
-    username: 'admin',
-    password: '$2a$10$rQZ9K8mN2pL1vX3yJ6hG7tU4iE5fA8bC9dD0eF1gH2iI3jJ4kK5lL6mM7nN8oO9pP0qQ1rR2sS3tT4uU5vV6wW7xX8yY9zZ0', // admin123
-    role: 'admin',
-    createdAt: new Date(),
-    lastLogin: null
-  }
-];
+const dataDir = path.dirname(USERS_FILE);
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+}
 
-// Função para verificar se um usuário existe
-const findUserByUsername = (username) => {
-  return users.find(user => user.username === username);
-};
+function loadUsers() {
+    try {
+        if (fs.existsSync(USERS_FILE)) {
+            const data = fs.readFileSync(USERS_FILE, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (error) {
+        console.error('Error loading users:', error);
+    }
+    return [];
+}
 
-// Função para verificar se um usuário existe por ID
-const findUserById = (id) => {
-  return users.find(user => user.id === id);
-};
+function saveUsers(users) {
+    try {
+        fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+    } catch (error) {
+        console.error('Error saving users:', error);
+    }
+}
 
-// Função para atualizar último login
-const updateLastLogin = (userId) => {
-  const user = findUserById(userId);
-  if (user) {
-    user.lastLogin = new Date();
-  }
-};
+function loadLoginAttempts() {
+    try {
+        if (fs.existsSync(LOGIN_ATTEMPTS_FILE)) {
+            const data = fs.readFileSync(LOGIN_ATTEMPTS_FILE, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (error) {
+        console.error('Error loading login attempts:', error);
+    }
+    return {};
+}
 
-module.exports = {
-  users,
-  findUserByUsername,
-  findUserById,
-  updateLastLogin,
-  generateAdminPassword
-};
+function saveLoginAttempts(attempts) {
+    try {
+        fs.writeFileSync(LOGIN_ATTEMPTS_FILE, JSON.stringify(attempts, null, 2));
+    } catch (error) {
+        console.error('Error saving login attempts:', error);
+    }
+}
+
+module.exports = { loadUsers, saveUsers, loadLoginAttempts, saveLoginAttempts };

@@ -1,39 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
-import Login from './components/Login';
-import Dashboard from './components/Dashboard';
-import { AuthContext } from './contexts/AuthContext';
-import { SocketContext } from './contexts/SocketContext';
-import { DeviceContext } from './contexts/DeviceContext';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import LoadingSpinner from './components/common/LoadingSpinner';
+import { AuthContext } from './contexts/AuthContext';
+import { DeviceContext } from './contexts/DeviceContext';
+import { SocketContext } from './contexts/SocketContext';
+import useWebSocket from './hooks/useWebSocket';
+import { authAPI } from './utils/api';
+
+// Lazy loading dos componentes
+const Login = lazy(() => import('./components/Login'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const DeviceManager = lazy(() => import('./components/DeviceManager'));
+const LogsViewer = lazy(() => import('./components/LogsViewer'));
+const Settings = lazy(() => import('./components/Settings'));
 
 function App() {
   const [user, setUser] = useState(null);
-  const [socket, setSocket] = useState(null);
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(localStorage.getItem('token'));
+
+  // Hook customizado para WebSocket
+  const { socket, connected, emit, on, off } = useWebSocket(token);
 
   useEffect(() => {
     // Verificar se há um token salvo
-    const token = localStorage.getItem('token');
     if (token) {
-      // Verificar se o token ainda é válido
-      fetch('/api/auth/verify', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.valid) {
-            setUser(data.user);
+      authAPI
+        .verify()
+        .then(response => {
+          if (response.data.valid) {
+            setUser(response.data.user);
           } else {
-            localStorage.removeItem('token');
+            handleLogout();
           }
         })
         .catch(() => {
-          localStorage.removeItem('token');
+          handleLogout();
         })
         .finally(() => {
           setLoading(false);
@@ -44,64 +49,110 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (user) {
-      // Conectar ao WebSocket
-      const newSocket = io();
-      setSocket(newSocket);
-
+    if (socket && connected) {
       // Eventos do WebSocket
-      newSocket.on('devices-update', updatedDevices => {
+      const handleDevicesUpdate = updatedDevices => {
         setDevices(updatedDevices);
-      });
+      };
 
-      newSocket.on('logs-update', logs => {
-        // Atualizar logs se necessário
-        console.log('Logs atualizados:', logs);
-      });
+      const handleLogsUpdate = logs => {
+        // Logs são tratados no componente LogsViewer
+        console.log('Novos logs recebidos:', logs.length);
+      };
+
+      const handleDeviceConnected = device => {
+        setDevices(prev => [...prev, device]);
+      };
+
+      const handleDeviceDisconnected = deviceId => {
+        setDevices(prev => prev.filter(d => d.id !== deviceId));
+      };
+
+      on('devices-update', handleDevicesUpdate);
+      on('logs-update', handleLogsUpdate);
+      on('device-connected', handleDeviceConnected);
+      on('device-disconnected', handleDeviceDisconnected);
+
+      // Solicitar dispositivos atuais
+      emit('get-devices');
 
       return () => {
-        newSocket.close();
+        off('devices-update', handleDevicesUpdate);
+        off('logs-update', handleLogsUpdate);
+        off('device-connected', handleDeviceConnected);
+        off('device-disconnected', handleDeviceDisconnected);
       };
     }
-  }, [user]);
+  }, [socket, connected, on, off, emit]);
 
-  const login = (userData, token) => {
+  const handleLogin = (userData, authToken) => {
     setUser(userData);
-    localStorage.setItem('token', token);
+    setToken(authToken);
+    localStorage.setItem('token', authToken);
   };
 
-  const logout = () => {
+  const handleLogout = () => {
     setUser(null);
     setDevices([]);
+    setToken(null);
     localStorage.removeItem('token');
-    if (socket) {
-      socket.close();
-      setSocket(null);
-    }
   };
 
   if (loading) {
-    return (
-      <div className='min-h-screen flex items-center justify-center'>
-        <div className='animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600'></div>
-      </div>
-    );
+    return <LoadingSpinner fullScreen />;
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      <SocketContext.Provider value={{ socket }}>
-        <DeviceContext.Provider value={{ devices, setDevices }}>
-          <div className='App'>
-            <Routes>
-              <Route path='/login' element={user ? <Navigate to='/' /> : <Login />} />
-              <Route path='/' element={user ? <Dashboard /> : <Navigate to='/login' />} />
-              <Route path='*' element={<Navigate to='/' />} />
-            </Routes>
-          </div>
-        </DeviceContext.Provider>
-      </SocketContext.Provider>
-    </AuthContext.Provider>
+    <ErrorBoundary>
+      <AuthContext.Provider
+        value={{
+          user,
+          token,
+          login: handleLogin,
+          logout: handleLogout,
+          isAuthenticated: !!user,
+        }}
+      >
+        <SocketContext.Provider
+          value={{
+            socket,
+            connected,
+            emit,
+            on,
+            off,
+          }}
+        >
+          <DeviceContext.Provider
+            value={{
+              devices,
+              setDevices,
+              selectedDevice: devices[0] || null,
+            }}
+          >
+            <div className='App min-h-screen bg-gray-50 dark:bg-gray-900'>
+              <Suspense fallback={<LoadingSpinner fullScreen />}>
+                <Routes>
+                  <Route
+                    path='/login'
+                    element={user ? <Navigate to='/' /> : <Login />}
+                  />
+                  <Route
+                    path='/'
+                    element={user ? <Dashboard /> : <Navigate to='/login' />}
+                  >
+                    <Route index element={<DeviceManager />} />
+                    <Route path='devices' element={<DeviceManager />} />
+                    <Route path='logs' element={<LogsViewer />} />
+                    <Route path='settings' element={<Settings />} />
+                  </Route>
+                  <Route path='*' element={<Navigate to='/' />} />
+                </Routes>
+              </Suspense>
+            </div>
+          </DeviceContext.Provider>
+        </SocketContext.Provider>
+      </AuthContext.Provider>
+    </ErrorBoundary>
   );
 }
 
