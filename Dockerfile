@@ -1,5 +1,5 @@
 # Build stage for React app
-FROM node:18-alpine AS client-build
+FROM node:24-alpine AS client-build
 
 WORKDIR /app/client
 
@@ -14,7 +14,7 @@ COPY client/ .
 RUN npm run build
 
 # Production stage
-FROM node:18-alpine
+FROM node:24-alpine
 
 # Install required system packages
 RUN apk add --no-cache \
