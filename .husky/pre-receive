@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Verificando permissões..."
+git diff-tree --name-only --no-commit-id -r $1
+
+echo "✅ Pré-receive concluído com sucesso!"

@@ -22,9 +22,9 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.NODE_ENV === 'production' ? false : ["http://localhost:3000"],
-    methods: ["GET", "POST"]
-  }
+    origin: process.env.NODE_ENV === 'production' ? false : ['http://localhost:3000'],
+    methods: ['GET', 'POST'],
+  },
 });
 
 // Configurações
@@ -32,16 +32,18 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware de segurança
 app.use(helmet());
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? false : ["http://localhost:3000"],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: process.env.NODE_ENV === 'production' ? false : ['http://localhost:3000'],
+    credentials: true,
+  })
+);
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 100, // limite por IP
-  message: 'Muitas requisições deste IP, tente novamente mais tarde.'
+  message: 'Muitas requisições deste IP, tente novamente mais tarde.',
 });
 app.use('/api/', limiter);
 
@@ -70,24 +72,24 @@ app.use('/api/logs', logRoutes);
 
 // Rota de health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    version: '1.0.0',
   });
 });
 
 // Servir arquivos estáticos em produção
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/build')));
-  
+
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/build/index.html'));
   });
 }
 
 // WebSocket para comunicação em tempo real
-io.on('connection', (socket) => {
+io.on('connection', socket => {
   logger.info('Cliente conectado via WebSocket', { socketId: socket.id });
 
   // Enviar logs em tempo real
@@ -124,7 +126,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('factory-reset', async (data) => {
+  socket.on('factory-reset', async data => {
     try {
       const { deviceId } = data;
       const result = await fastbootManager.factoryReset(deviceId);
@@ -138,9 +140,9 @@ io.on('connection', (socket) => {
 // Middleware de tratamento de erros
 app.use((err, req, res, next) => {
   logger.error('Erro não tratado:', err);
-  res.status(500).json({ 
+  res.status(500).json({
     error: 'Erro interno do servidor',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Algo deu errado'
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Algo deu errado',
   });
 });
 
@@ -153,9 +155,9 @@ app.use('*', (req, res) => {
 server.listen(PORT, () => {
   logger.info(`Servidor rodando na porta ${PORT}`, {
     environment: process.env.NODE_ENV || 'development',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
-  
+
   // Verificar disponibilidade do ADB
   deviceManager.checkAdbAvailability().then(available => {
     if (available) {

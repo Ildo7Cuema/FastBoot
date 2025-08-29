@@ -6,60 +6,60 @@ module.exports = {
       2,
       'always',
       [
-        'feat',     // Nova funcionalidade
-        'fix',      // Correção de bug
-        'docs',     // Documentação
-        'style',    // Formatação de código
+        'feat', // Nova funcionalidade
+        'fix', // Correção de bug
+        'docs', // Documentação
+        'style', // Formatação de código
         'refactor', // Refatoração
-        'perf',     // Melhorias de performance
-        'test',     // Adição ou correção de testes
-        'chore',    // Tarefas de manutenção
-        'ci',       // Configurações de CI/CD
-        'build',    // Build do sistema
-        'revert',   // Reverter commit anterior
+        'perf', // Melhorias de performance
+        'test', // Adição ou correção de testes
+        'chore', // Tarefas de manutenção
+        'ci', // Configurações de CI/CD
+        'build', // Build do sistema
+        'revert', // Reverter commit anterior
         'security', // Correções de segurança
-        'wip',      // Trabalho em progresso
+        'wip', // Trabalho em progresso
       ],
     ],
-    
+
     // Tamanho do assunto do commit
     'subject-case': [2, 'never', ['sentence-case', 'start-case', 'pascal-case', 'upper-case']],
     'subject-empty': [2, 'never'],
     'subject-full-stop': [2, 'never', '.'],
     'subject-max-length': [2, 'always', 72],
-    
+
     // Tamanho do corpo do commit
     'body-max-line-length': [2, 'always', 100],
-    
+
     // Tamanho do footer do commit
     'footer-max-line-length': [2, 'always', 100],
-    
+
     // Regras específicas para o projeto
     'scope-enum': [
       2,
       'always',
       [
-        'auth',      // Autenticação
-        'api',       // API
-        'ui',        // Interface do usuário
-        'backend',   // Backend
-        'frontend',  // Frontend
-        'db',        // Banco de dados
-        'test',      // Testes
-        'docs',      // Documentação
-        'ci',        // CI/CD
-        'deps',      // Dependências
-        'security',  // Segurança
-        'perf',      // Performance
-        'refactor',  // Refatoração
-        'style',     // Estilo de código
+        'auth', // Autenticação
+        'api', // API
+        'ui', // Interface do usuário
+        'backend', // Backend
+        'frontend', // Frontend
+        'db', // Banco de dados
+        'test', // Testes
+        'docs', // Documentação
+        'ci', // CI/CD
+        'deps', // Dependências
+        'security', // Segurança
+        'perf', // Performance
+        'refactor', // Refatoração
+        'style', // Estilo de código
       ],
     ],
-    
+
     // Permitir commits sem escopo para mudanças gerais
     'scope-empty': [2, 'never'],
   },
-  
+
   // Configurações de mensagens de commit
   prompt: {
     questions: {

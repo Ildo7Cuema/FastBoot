@@ -1,5 +1,9 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+# top-most EditorConfig file
 root = true
 
+# Unix-style newlines with a newline ending every file
 [*]
 charset = utf-8
 end_of_line = lf
@@ -8,14 +12,68 @@ trim_trailing_whitespace = true
 indent_style = space
 indent_size = 2
 
-[*.{js,jsx,ts,tsx,json,css,scss,html,yml,yaml}]
+# JavaScript/JSX files
+[*.{js,jsx}]
+indent_style = space
+indent_size = 2
+quote_type = single
+max_line_length = 80
+
+# TypeScript files
+[*.{ts,tsx}]
+indent_style = space
+indent_size = 2
+quote_type = single
+max_line_length = 80
+
+# JSON files
+[*.json]
+indent_style = space
 indent_size = 2
 
+# CSS/SCSS files
+[*.{css,scss}]
+indent_style = space
+indent_size = 2
+
+# HTML files
+[*.html]
+indent_style = space
+indent_size = 2
+
+# Markdown files
 [*.md]
 trim_trailing_whitespace = false
+max_line_length = 100
 
-[*.{py,rst}]
-indent_size = 4
+# YAML files
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
 
+# Package files
+[package.json]
+indent_style = space
+indent_size = 2
+
+# Configuration files
+[*.{rc,config}.{js,json}]
+indent_style = space
+indent_size = 2
+
+# Shell scripts
+[*.sh]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+
+# Batch files
+[*.{bat,cmd}]
+indent_style = space
+indent_size = 2
+end_of_line = crlf
+
+# Makefiles
 [Makefile]
 indent_style = tab
+indent_size = 4

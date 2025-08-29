@@ -10,8 +10,8 @@ root.render(
   <React.StrictMode>
     <BrowserRouter>
       <App />
-      <Toaster 
-        position="top-right"
+      <Toaster
+        position='top-right'
         toastOptions={{
           duration: 4000,
           style: {

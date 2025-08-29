@@ -1,0 +1,216 @@
+{
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "editor.rulers": [100],
+  "editor.wordWrap": "off",
+  "editor.minimap.enabled": false,
+
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/coverage": true,
+    "**/.git": true,
+    "**/logs": true
+  },
+
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/coverage": true,
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/*.log": true
+  },
+
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "typescript.suggest.autoImports": true,
+
+  "javascript.preferences.importModuleSpecifier": "relative",
+  "javascript.suggest.autoImports": true,
+
+  "emmet.includeLanguages": {
+    "javascript": "javascriptreact"
+  },
+
+  "workbench.colorTheme": "Default Dark+",
+  "workbench.iconTheme": "material-icon-theme",
+
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.defaultProfile.linux": "bash",
+
+  "git.enableSmartCommit": true,
+  "git.autofetch": true,
+  "git.confirmSync": false,
+
+  "eslint.validate": ["javascript", "javascriptreact"],
+
+  "prettier.requireConfig": true,
+  "prettier.useEditorConfig": false,
+
+  "files.associations": {
+    "*.js": "javascript",
+    "*.jsx": "javascriptreact",
+    "*.ts": "typescript",
+    "*.tsx": "typescriptreact",
+    "*.json": "json",
+    "*.md": "markdown",
+    "*.css": "css",
+    "*.html": "html"
+  },
+
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "*.js": "${capture}.js.map, ${capture}.min.js, ${capture}.d.ts",
+    "*.jsx": "${capture}.jsx.map, ${capture}.min.jsx, ${capture}.d.ts",
+    "*.ts": "${capture}.js, ${capture}.js.map, ${capture}.d.ts",
+    "*.tsx": "${capture}.jsx, ${capture}.jsx.map, ${capture}.d.ts",
+    "*.css": "${capture}.css.map, ${capture}.min.css",
+    "*.scss": "${capture}.css, ${capture}.css.map, ${capture}.min.css",
+    "*.sass": "${capture}.css, ${capture}.css.map, ${capture}.min.css",
+    "*.less": "${capture}.css, ${capture}.css.map, ${capture}.min.css",
+    "*.html": "${capture}.min.html, ${capture}.ejs, ${capture}.hbs, ${capture}.erb",
+    "*.json": "${capture}.min.json, ${capture}.schema.json",
+    "*.md": "${capture}.mdx, ${capture}.markdown",
+    "*.png": "${capture}@2x.png, ${capture}@3x.png",
+    "*.jpg": "${capture}@2x.jpg, ${capture}@3x.jpg",
+    "*.jpeg": "${capture}@2x.jpeg, ${capture}@3x.jpeg",
+    "*.svg": "${capture}.min.svg",
+    "*.ico": "${capture}.png, ${capture}.jpg, ${capture}.jpeg, ${capture}.svg"
+  },
+
+  "breadcrumbs.enabled": true,
+  "breadcrumbs.showFiles": true,
+  "breadcrumbs.showSymbols": true,
+  "breadcrumbs.showModules": true,
+
+  "outline.showVariables": true,
+  "outline.showFunctions": true,
+  "outline.showClasses": true,
+  "outline.showModules": true,
+
+  "problems.decorations.enabled": true,
+
+  "editor.suggestSelection": "first",
+  "editor.acceptSuggestionOnCommitCharacter": false,
+  "editor.acceptSuggestionOnEnter": "on",
+
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": false,
+    "strings": true
+  },
+
+  "editor.snippetSuggestions": "top",
+
+  "workbench.editor.enablePreview": false,
+  "workbench.editor.enablePreviewFromQuickOpen": false,
+
+  "diffEditor.ignoreTrimWhitespace": false,
+  "diffEditor.renderSideBySide": true,
+
+  "gitlens.codeLens.enabled": true,
+  "gitlens.codeLens.recentChange.enabled": true,
+  "gitlens.codeLens.authors.enabled": true,
+
+  "auto-rename-tag.activationOnLanguage": [
+    "html",
+    "xml",
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+
+  "bracket-pair-colorizer-2.colors": ["Gold", "Orchid", "LightSkyBlue"],
+
+  "bracket-pair-colorizer-2.forceUniqueOpeningColor": true,
+
+  "material-icon-theme.folders.associations": {
+    "src": "source",
+    "dist": "dist",
+    "build": "build",
+    "assets": "assets",
+    "modules": "modules",
+    "renderer": "renderer"
+  },
+
+  "material-icon-theme.files.associations": {
+    "*.js": "javascript",
+    "*.jsx": "javascriptreact",
+    "*.ts": "typescript",
+    "*.tsx": "typescriptreact",
+    "*.json": "json",
+    "*.md": "markdown",
+    "*.css": "css",
+    "*.html": "html",
+    "*.yml": "yaml",
+    "*.yaml": "yaml"
+  },
+
+  "eslint.workingDirectories": [".", "client"],
+
+  "prettier.configPath": ".prettierrc",
+  "prettier.ignorePath": ".prettierignore",
+
+  "tailwindCSS.includeLanguages": {
+    "javascript": "javascript",
+    "javascriptreact": "javascriptreact"
+  },
+
+  "tailwindCSS.experimental.classRegex": [
+    ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+    ["classnames\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+    ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ],
+
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/build/**": true,
+    "**/coverage/**": true
+  },
+
+  "terminal.integrated.env.osx": {
+    "NODE_ENV": "development"
+  },
+
+  "terminal.integrated.env.linux": {
+    "NODE_ENV": "development"
+  },
+
+  "terminal.integrated.env.windows": {
+    "NODE_ENV": "development"
+  },
+
+  "debug.console.fontSize": 14,
+  "debug.console.fontFamily": "Consolas, 'Courier New', monospace",
+
+  "workbench.colorCustomizations": {
+    "editor.lineHighlightBackground": "#f3f4f6",
+    "editor.lineHighlightBorder": "#e5e7eb"
+  },
+
+  "workbench.preferredDarkColorTheme": "Default Dark+",
+  "workbench.preferredLightColorTheme": "Default Light+",
+
+  "npm.enableScriptExplorer": true,
+  "npm.runSilent": true,
+
+  "emmet.triggerExpansionOnTab": true,
+  "emmet.showExpandedAbbreviation": "always"
+}

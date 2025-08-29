@@ -16,7 +16,7 @@ REM Verificar versão do Node.js
 for /f "tokens=1,2 delims=." %%a in ('node --version') do set NODE_VERSION=%%a
 set NODE_VERSION=%NODE_VERSION:~1%
 if %NODE_VERSION% lss 16 (
-    echo ❌ Node.js versão 16+ é necessária. Versão atual: 
+    echo ❌ Node.js versão 16+ é necessária. Versão atual:
     node --version
     pause
     exit /b 1

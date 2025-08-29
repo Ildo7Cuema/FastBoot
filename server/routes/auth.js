@@ -26,7 +26,7 @@ const authenticateToken = (req, res, next) => {
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    
+
     if (!username || !password) {
       return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
     }
@@ -55,8 +55,8 @@ router.post('/login', async (req, res) => {
       user: {
         id: user.id,
         username: user.username,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
   } catch (error) {
     res.status(500).json({ error: 'Erro interno do servidor' });

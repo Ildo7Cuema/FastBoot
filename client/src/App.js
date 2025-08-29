@@ -21,23 +21,23 @@ function App() {
       // Verificar se o token ainda é válido
       fetch('/api/auth/verify', {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.valid) {
-          setUser(data.user);
-        } else {
+        .then(res => res.json())
+        .then(data => {
+          if (data.valid) {
+            setUser(data.user);
+          } else {
+            localStorage.removeItem('token');
+          }
+        })
+        .catch(() => {
           localStorage.removeItem('token');
-        }
-      })
-      .catch(() => {
-        localStorage.removeItem('token');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     } else {
       setLoading(false);
     }
@@ -50,11 +50,11 @@ function App() {
       setSocket(newSocket);
 
       // Eventos do WebSocket
-      newSocket.on('devices-update', (updatedDevices) => {
+      newSocket.on('devices-update', updatedDevices => {
         setDevices(updatedDevices);
       });
 
-      newSocket.on('logs-update', (logs) => {
+      newSocket.on('logs-update', logs => {
         // Atualizar logs se necessário
         console.log('Logs atualizados:', logs);
       });
@@ -82,8 +82,8 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+      <div className='min-h-screen flex items-center justify-center'>
+        <div className='animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600'></div>
       </div>
     );
   }
@@ -92,20 +92,11 @@ function App() {
     <AuthContext.Provider value={{ user, login, logout }}>
       <SocketContext.Provider value={{ socket }}>
         <DeviceContext.Provider value={{ devices, setDevices }}>
-          <div className="App">
+          <div className='App'>
             <Routes>
-              <Route 
-                path="/login" 
-                element={user ? <Navigate to="/" /> : <Login />} 
-              />
-              <Route 
-                path="/" 
-                element={user ? <Dashboard /> : <Navigate to="/login" />} 
-              />
-              <Route 
-                path="*" 
-                element={<Navigate to="/" />} 
-              />
+              <Route path='/login' element={user ? <Navigate to='/' /> : <Login />} />
+              <Route path='/' element={user ? <Dashboard /> : <Navigate to='/login' />} />
+              <Route path='*' element={<Navigate to='/' />} />
             </Routes>
           </div>
         </DeviceContext.Provider>

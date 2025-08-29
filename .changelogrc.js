@@ -14,7 +14,7 @@ module.exports = {
     { type: 'security', section: '🔒 Security' },
     { type: 'wip', section: '🚧 Work in Progress' },
   ],
-  
+
   // Configurações de template
   template: {
     commit: '{{hash}} {{message}}',
@@ -28,43 +28,43 @@ module.exports = {
     finalize: '\n\n{{footer}}',
     release: '## {{release}} ({{date}})\n{{body}}',
   },
-  
+
   // Configurações de release
   releaseCount: 0,
   outputUnreleased: true,
-  
+
   // Configurações de grupos
   groupBy: 'type',
   commitGroupsSort: 'title',
   commitsSort: 'header',
-  
+
   // Configurações de links
   issuePrefixes: ['#'],
   commitUrlFormat: '{{host}}/{{owner}}/{{repository}}/commit/{{hash}}',
   compareUrlFormat: '{{host}}/{{owner}}/{{repository}}/compare/{{previousTag}}...{{currentTag}}',
   issueUrlFormat: '{{host}}/{{owner}}/{{repository}}/issues/{{id}}',
   userUrlFormat: '{{host}}/{{user}}',
-  
+
   // Configurações de data
   dateFormat: 'YYYY-MM-DD',
-  
+
   // Configurações de repositório
   repositoryUrl: 'https://github.com/seu-usuario/fastboot-factory-reset-web',
-  
+
   // Configurações de labels
   labels: {
-    'feat': 'enhancement',
-    'fix': 'bug',
-    'docs': 'documentation',
-    'style': 'style',
-    'refactor': 'refactor',
-    'perf': 'performance',
-    'test': 'test',
-    'build': 'build',
-    'ci': 'ci',
-    'chore': 'chore',
-    'revert': 'revert',
-    'security': 'security',
-    'wip': 'wip',
+    feat: 'enhancement',
+    fix: 'bug',
+    docs: 'documentation',
+    style: 'style',
+    refactor: 'refactor',
+    perf: 'performance',
+    test: 'test',
+    build: 'build',
+    ci: 'ci',
+    chore: 'chore',
+    revert: 'revert',
+    security: 'security',
+    wip: 'wip',
   },
 };

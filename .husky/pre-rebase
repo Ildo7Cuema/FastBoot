@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Verificando status do repositório..."
+git status --porcelain
+
+echo "✅ Pré-rebase concluído com sucesso!"

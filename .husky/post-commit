@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "📝 Commit realizado com sucesso!"
+echo "Hash: $(git rev-parse HEAD)"
+
+echo "✅ Pós-commit concluído com sucesso!"

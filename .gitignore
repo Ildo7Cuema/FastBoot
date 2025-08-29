@@ -7,14 +7,20 @@ yarn-error.log*
 # Builds
 dist/
 build/
-out/
+client/build/
+*.tgz
+*.tar.gz
 
 # Logs
 logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
 # Runtime data
-pids/
+pids
 *.pid
 *.seed
 *.pid.lock
@@ -39,16 +45,23 @@ bower_components
 build/Release
 
 # Dependency directories
+node_modules/
 jspm_packages/
 
-# TypeScript v1 declaration files
-typings/
+# TypeScript cache
+*.tsbuildinfo
 
 # Optional npm cache directory
 .npm
 
 # Optional eslint cache
 .eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
 
 # Optional REPL history
 .node_repl_history
@@ -62,74 +75,71 @@ typings/
 # dotenv environment variables file
 .env
 .env.test
+.env.local
 .env.production
 
 # parcel-bundler cache
 .cache
 .parcel-cache
 
-# next.js build output
+# Next.js build output
 .next
 
-# nuxt.js build output
+# Nuxt.js build / generate output
 .nuxt
+dist
 
-# vuepress build output
-.vuepress/dist
+# Gatsby files
+.cache/
+public
 
-# Serverless directories
-.serverless
+# Storybook build outputs
+.out
+.storybook-out
 
-# FuseBox cache
-.fusebox/
+# Temporary folders
+tmp/
+temp/
 
-# DynamoDB Local files
-.dynamodb/
-
-# TernJS port file
-.tern-port
-
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-
-# Electron specific
-.electron-builder.env
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Docker
+.dockerignore
 
-# Temporary files
-*.tmp
-*.temp
+# PM2
+.pm2
+
+# SonarQube
+.sonar/
+
+# Test files
+*.test.js
+*.spec.js
+test-results/
+playwright-report/
+test-results.xml
 
 # Backup files
 *.bak
 *.backup
+*.old
 
-# Local configuration
-config.local.js
-.env.local
-
-# Test files
-test-results/
-coverage/
-
-# Package files
-*.tgz
-*.tar.gz
-
-# Development files
-.dev/
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

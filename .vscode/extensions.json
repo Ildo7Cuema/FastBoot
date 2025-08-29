@@ -1,0 +1,24 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss",
+    "ms-vscode.vscode-typescript-next",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense",
+    "ms-vscode.vscode-json",
+    "ms-vscode.vscode-css-formatter",
+    "ms-vscode.vscode-html-formatter",
+    "ms-vscode.vscode-javascript-debug",
+    "ms-vscode.vscode-node-debug2",
+    "ms-vscode.vscode-js-debug",
+    "ms-vscode.vscode-js-debug-companion",
+    "ms-vscode.vscode-js-debug-companion",
+    "ms-vscode.vscode-js-debug-companion",
+    "ms-vscode.vscode-js-debug-companion",
+    "ms-vscode.vscode-js-debug-companion",
+    "ms-vscode.vscode-js-debug-companion",
+    "ms-vscode.vscode-js-debug-companion",
+    "ms-vscode.vscode-js-debug-companion"
+  ]
+}

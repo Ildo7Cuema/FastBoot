@@ -1,0 +1,80 @@
+# Dependências
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Builds
+dist/
+build/
+client/build/
+*.tgz
+*.tar.gz
+
+# Logs
+logs/
+*.log
+
+# Coverage
+coverage/
+*.lcov
+
+# Cache
+.cache/
+.parcel-cache/
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Environment
+.env*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Configurações específicas
+*.min.js
+*.min.css
+*.min.html
+
+# Arquivos de teste
+*.test.js
+*.spec.js
+test-results/
+playwright-report/
+
+# Arquivos de backup
+*.bak
+*.backup
+*.old
+
+# Arquivos temporários
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Arquivos de lock
+*.lock
+
+# Arquivos de configuração específicos
+sonar-project.properties
+commitlint.config.js
+.changelogrc.js
+renovate.json

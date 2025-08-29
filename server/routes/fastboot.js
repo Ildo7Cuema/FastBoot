@@ -26,23 +26,23 @@ router.use(authenticateToken);
 router.post('/factory-reset', async (req, res) => {
   try {
     const { deviceId } = req.body;
-    
+
     if (!deviceId) {
       return res.status(400).json({ error: 'ID do dispositivo é obrigatório' });
     }
 
-    req.logger.warn('Factory reset iniciado', { 
-      deviceId, 
+    req.logger.warn('Factory reset iniciado', {
+      deviceId,
       user: req.user.username,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     const result = await req.fastbootManager.factoryReset(deviceId);
-    
-    req.logger.info('Factory reset concluído com sucesso', { 
-      deviceId, 
+
+    req.logger.info('Factory reset concluído com sucesso', {
+      deviceId,
       user: req.user.username,
-      result 
+      result,
     });
 
     res.json({ success: true, result });
@@ -67,22 +67,22 @@ router.get('/status', async (req, res) => {
 router.post('/clear-cache', async (req, res) => {
   try {
     const { deviceId } = req.body;
-    
+
     if (!deviceId) {
       return res.status(400).json({ error: 'ID do dispositivo é obrigatório' });
     }
 
-    req.logger.info('Limpeza de cache iniciada', { 
-      deviceId, 
-      user: req.user.username 
+    req.logger.info('Limpeza de cache iniciada', {
+      deviceId,
+      user: req.user.username,
     });
 
     const result = await req.fastbootManager.clearCache(deviceId);
-    
-    req.logger.info('Limpeza de cache concluída', { 
-      deviceId, 
+
+    req.logger.info('Limpeza de cache concluída', {
+      deviceId,
       user: req.user.username,
-      result 
+      result,
     });
 
     res.json({ success: true, result });
@@ -96,22 +96,22 @@ router.post('/clear-cache', async (req, res) => {
 router.post('/reboot', async (req, res) => {
   try {
     const { deviceId } = req.body;
-    
+
     if (!deviceId) {
       return res.status(400).json({ error: 'ID do dispositivo é obrigatório' });
     }
 
-    req.logger.info('Reinicialização iniciada', { 
-      deviceId, 
-      user: req.user.username 
+    req.logger.info('Reinicialização iniciada', {
+      deviceId,
+      user: req.user.username,
     });
 
     const result = await req.fastbootManager.rebootDevice(deviceId);
-    
-    req.logger.info('Reinicialização concluída', { 
-      deviceId, 
+
+    req.logger.info('Reinicialização concluída', {
+      deviceId,
       user: req.user.username,
-      result 
+      result,
     });
 
     res.json({ success: true, result });

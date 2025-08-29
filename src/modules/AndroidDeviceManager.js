@@ -101,8 +101,8 @@ class AndroidDeviceManager {
       throw new Error('ADB não está disponível. Instale o Android SDK Platform Tools.');
     }
 
-    return new Promise((resolve, reject) => {
-      exec(`${this.adbPath} devices -l`, (error, stdout, stderr) => {
+            return new Promise(async (resolve, reject) => {
+      exec(`${this.adbPath} devices -l`, async (error, stdout, stderr) => {
         if (error) {
           this.logger.error('Erro ao executar adb devices:', error);
           reject(error);

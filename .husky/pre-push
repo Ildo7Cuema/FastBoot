@@ -1,6 +1,14 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
 
-npm run test
-npm run build:check
+echo "🔍 Executando linting..."
+npm run lint
+
+echo "🧪 Executando testes..."
+npm test
+
+echo "📦 Verificando build..."
+npm run build
+
+echo "✅ Pré-push concluído com sucesso!"
 

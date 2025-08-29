@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔄 Reescrita concluída!"
+echo "Verificando dependências..."
+
+npm install
+
+echo "✅ Pós-rewrite concluído com sucesso!"

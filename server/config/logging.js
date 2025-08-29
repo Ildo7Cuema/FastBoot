@@ -12,7 +12,7 @@ const logConfig = {
     http: 3,
     debug: 4,
   },
-  
+
   // Cores para cada nível
   colors: {
     error: 'red',
@@ -21,16 +21,14 @@ const logConfig = {
     http: 'magenta',
     debug: 'white',
   },
-  
+
   // Formato dos logs
   format: winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
     winston.format.colorize({ all: true }),
-    winston.format.printf(
-      (info) => `${info.timestamp} ${info.level}: ${info.message}`,
-    ),
+    winston.format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
   ),
-  
+
   // Transports (destinos dos logs)
   transports: [
     // Console
@@ -38,32 +36,26 @@ const logConfig = {
       format: winston.format.combine(
         winston.format.colorize({ all: true }),
         winston.format.simple()
-      )
+      ),
     }),
-    
+
     // Arquivo de logs de erro
     new winston.transports.File({
       filename: path.join(getLogDirectory(), 'error.log'),
       level: 'error',
       maxsize: 5242880, // 5MB
       maxFiles: 5,
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.json()
-      )
+      format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
     }),
-    
+
     // Arquivo de logs combinados
     new winston.transports.File({
       filename: path.join(getLogDirectory(), 'combined.log'),
       maxsize: 5242880, // 5MB
       maxFiles: 5,
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.json()
-      )
-    })
-  ]
+      format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+    }),
+  ],
 };
 
 // Função para obter diretório de logs baseado na plataforma
@@ -104,10 +96,7 @@ if (process.env.NODE_ENV === 'production') {
       level: 'warn',
       maxsize: 10485760, // 10MB
       maxFiles: 10,
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.json()
-      )
+      format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
     })
   );
 }
@@ -126,7 +115,7 @@ function auditLog(action, user, details = {}) {
     timestamp: new Date().toISOString(),
     ip: details.ip,
     userAgent: details.userAgent,
-    details
+    details,
   });
 }
 
@@ -134,7 +123,7 @@ function auditLog(action, user, details = {}) {
 function securityLog(level, message, details = {}) {
   logger.log(level, `SECURITY: ${message}`, {
     timestamp: new Date().toISOString(),
-    details
+    details,
   });
 }
 
@@ -143,5 +132,5 @@ module.exports = {
   auditLog,
   securityLog,
   getLogDirectory,
-  ensureLogDirectory
+  ensureLogDirectory,
 };

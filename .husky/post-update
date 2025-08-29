@@ -4,5 +4,7 @@
 echo "📦 Instalando dependências..."
 npm install
 
-echo "✅ Pós-merge concluído com sucesso!"
+echo "🔨 Executando build..."
+npm run build
 
+echo "✅ Pós-update concluído com sucesso!"

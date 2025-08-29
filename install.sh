@@ -31,7 +31,7 @@ echo "✅ npm $(npm -v) encontrado"
 if ! command -v adb &> /dev/null; then
     echo "⚠️  ADB não encontrado no PATH"
     echo "   Instalando Android Platform Tools..."
-    
+
     # Detectar sistema operacional
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         # Linux
