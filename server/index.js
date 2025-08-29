@@ -12,6 +12,7 @@ const authRoutes = require('./routes/auth');
 const deviceRoutes = require('./routes/devices');
 const fastbootRoutes = require('./routes/fastboot');
 const logRoutes = require('./routes/logs');
+const systemRoutes = require('./routes/system');
 
 const app = express();
 const server = http.createServer(app);
@@ -60,6 +61,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api/fastboot', fastbootRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/system', systemRoutes);
 
 // Rota de health check
 app.get('/api/health', (req, res) => {
