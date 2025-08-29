@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "password": "$2a$10$5dQJXxYm9EFgQxDZ.IYcQuK9UqV8QKrHvKGBhEF9mGHxOxXcLpJZu",
+    "email": "admin@fastboot.com",
+    "role": "admin",
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
