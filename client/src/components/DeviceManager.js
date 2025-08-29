@@ -1,336 +1,419 @@
-import React, { useState, useEffect } from 'react';
-import { useDevices } from '../contexts/DeviceContext';
-import { useSocket } from '../contexts/SocketContext';
+import React, { useState, useContext, useEffect } from 'react';
+import { DeviceContext } from '../contexts/DeviceContext';
+import { SocketContext } from '../contexts/SocketContext';
+import { deviceAPI, fastbootAPI } from '../utils/api';
+import toast from 'react-hot-toast';
 import {
   Smartphone,
   RefreshCw,
   AlertTriangle,
-  CheckCircle,
-  XCircle,
   Power,
   Trash2,
+  Database,
+  Loader2,
+  Wifi,
+  WifiOff,
+  Info,
+  CheckCircle,
+  XCircle,
+  Download,
+  Upload
 } from 'lucide-react';
-import toast from 'react-hot-toast';
 
 const DeviceManager = () => {
-  const { devices, setDevices } = useDevices();
-  const { socket } = useSocket();
+  const { devices, setDevices, selectedDevice } = useContext(DeviceContext);
+  const { emit, on, off } = useContext(SocketContext);
   const [loading, setLoading] = useState(false);
-
-  const [operationInProgress, setOperationInProgress] = useState(false);
+  const [detecting, setDetecting] = useState(false);
+  const [operations, setOperations] = useState({});
+  const [showConfirmDialog, setShowConfirmDialog] = useState(null);
+  const [deviceInfo, setDeviceInfo] = useState({});
 
   useEffect(() => {
-    if (socket) {
-      socket.emit('detect-devices');
+    // Detectar dispositivos ao montar o componente
+    detectDevices();
 
-      socket.on('devices-detected', data => {
-        if (data.success) {
-          setDevices(data.devices);
-        } else {
-          toast.error('Erro ao detectar dispositivos: ' + data.error);
+    // Listeners para eventos de dispositivos
+    const handleOperationProgress = (data) => {
+      setOperations(prev => ({
+        ...prev,
+        [data.deviceId]: {
+          ...prev[data.deviceId],
+          ...data
         }
-      });
+      }));
+    };
 
-      socket.on('factory-reset-result', data => {
-        setOperationInProgress(false);
-        if (data.success) {
-          toast.success('Factory reset concluído com sucesso!');
-        } else {
-          toast.error('Erro no factory reset: ' + data.error);
-        }
+    const handleOperationComplete = (data) => {
+      setOperations(prev => {
+        const newOps = { ...prev };
+        delete newOps[data.deviceId];
+        return newOps;
       });
-    }
-  }, [socket, setDevices]);
+      
+      if (data.success) {
+        toast.success(`Operação concluída: ${data.message}`);
+      } else {
+        toast.error(`Erro na operação: ${data.error}`);
+      }
+    };
+
+    on('operation-progress', handleOperationProgress);
+    on('operation-complete', handleOperationComplete);
+
+    return () => {
+      off('operation-progress', handleOperationProgress);
+      off('operation-complete', handleOperationComplete);
+    };
+  }, [on, off]);
 
   const detectDevices = async () => {
-    setLoading(true);
+    setDetecting(true);
     try {
-      const response = await fetch('/api/devices/detect', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      const data = await response.json();
-      if (data.success) {
-        setDevices(data.devices);
-        toast.success(`${data.devices.length} dispositivo(s) detectado(s)`);
+      const response = await deviceAPI.detect();
+      setDevices(response.data.devices || []);
+      
+      if (response.data.devices.length === 0) {
+        toast.info('Nenhum dispositivo encontrado. Verifique as conexões USB.');
       } else {
-        toast.error('Erro ao detectar dispositivos');
+        toast.success(`${response.data.devices.length} dispositivo(s) detectado(s)`);
       }
     } catch (error) {
-      toast.error('Erro de conexão');
+      console.error('Erro ao detectar dispositivos:', error);
+    } finally {
+      setDetecting(false);
+    }
+  };
+
+  const getDeviceInfo = async (deviceId) => {
+    try {
+      setLoading(true);
+      const response = await deviceAPI.getInfo(deviceId);
+      setDeviceInfo(prev => ({
+        ...prev,
+        [deviceId]: response.data
+      }));
+      toast.success('Informações do dispositivo atualizadas');
+    } catch (error) {
+      console.error('Erro ao obter informações:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFactoryReset = async deviceId => {
-    if (
-      !window.confirm(
-        '⚠️ ATENÇÃO: Esta operação irá apagar TODOS os dados do dispositivo!\n\nTem certeza que deseja continuar?'
-      )
-    ) {
-      return;
-    }
-
-    setOperationInProgress(true);
+  const handleFactoryReset = async (device) => {
+    setShowConfirmDialog(null);
+    
     try {
-      const response = await fetch('/api/fastboot/factory-reset', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({ deviceId }),
-      });
+      setOperations(prev => ({
+        ...prev,
+        [device.id]: { 
+          type: 'factory-reset', 
+          status: 'starting',
+          progress: 0 
+        }
+      }));
 
-      const data = await response.json();
-      if (data.success) {
-        toast.success('Factory reset iniciado com sucesso!');
-      } else {
-        toast.error('Erro ao iniciar factory reset: ' + data.error);
-        setOperationInProgress(false);
+      const response = await fastbootAPI.factoryReset(device.id);
+      
+      if (response.data.success) {
+        toast.success('Factory reset iniciado');
       }
     } catch (error) {
-      toast.error('Erro de conexão');
-      setOperationInProgress(false);
+      setOperations(prev => {
+        const newOps = { ...prev };
+        delete newOps[device.id];
+        return newOps;
+      });
+      console.error('Erro ao executar factory reset:', error);
     }
   };
 
-  const handleReboot = async deviceId => {
+  const handleReboot = async (deviceId, mode = 'normal') => {
     try {
-      const response = await fetch('/api/fastboot/reboot', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({ deviceId }),
-      });
+      setOperations(prev => ({
+        ...prev,
+        [deviceId]: { type: 'reboot', status: 'starting' }
+      }));
 
-      const data = await response.json();
-      if (data.success) {
-        toast.success('Reinicialização iniciada!');
+      let response;
+      if (mode === 'bootloader') {
+        response = await deviceAPI.rebootToBootloader(deviceId);
       } else {
-        toast.error('Erro ao reiniciar: ' + data.error);
+        response = await deviceAPI.reboot(deviceId);
+      }
+
+      if (response.data.success) {
+        toast.success(`Reiniciando dispositivo ${mode === 'bootloader' ? 'em modo bootloader' : ''}`);
       }
     } catch (error) {
-      toast.error('Erro de conexão');
+      console.error('Erro ao reiniciar:', error);
+    } finally {
+      setTimeout(() => {
+        setOperations(prev => {
+          const newOps = { ...prev };
+          delete newOps[deviceId];
+          return newOps;
+        });
+      }, 2000);
     }
   };
 
-  const handleClearCache = async deviceId => {
+  const handleClearCache = async (deviceId) => {
     try {
-      const response = await fetch('/api/fastboot/clear-cache', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({ deviceId }),
-      });
+      setOperations(prev => ({
+        ...prev,
+        [deviceId]: { type: 'clear-cache', status: 'starting' }
+      }));
 
-      const data = await response.json();
-      if (data.success) {
-        toast.success('Cache limpo com sucesso!');
-      } else {
-        toast.error('Erro ao limpar cache: ' + data.error);
+      const response = await fastbootAPI.clearCache(deviceId);
+      
+      if (response.data.success) {
+        toast.success('Cache limpo com sucesso');
       }
     } catch (error) {
-      toast.error('Erro de conexão');
+      console.error('Erro ao limpar cache:', error);
+    } finally {
+      setTimeout(() => {
+        setOperations(prev => {
+          const newOps = { ...prev };
+          delete newOps[deviceId];
+          return newOps;
+        });
+      }, 2000);
     }
   };
 
-  const getDeviceStatusIcon = status => {
-    switch (status) {
-      case 'device':
-        return <CheckCircle className='h-5 w-5 text-success-500' />;
-      case 'recovery':
-        return <AlertTriangle className='h-5 w-5 text-warning-500' />;
-      case 'bootloader':
-        return <Power className='h-5 w-5 text-primary-500' />;
-      default:
-        return <XCircle className='h-5 w-5 text-danger-500' />;
+  const getStatusIcon = (device) => {
+    if (operations[device.id]) {
+      return <Loader2 className="h-5 w-5 animate-spin text-blue-500" />;
     }
+    
+    if (device.connected) {
+      return <CheckCircle className="h-5 w-5 text-green-500" />;
+    }
+    
+    return <XCircle className="h-5 w-5 text-red-500" />;
   };
 
-  const getDeviceStatusText = status => {
-    switch (status) {
-      case 'device':
-        return 'Conectado';
-      case 'recovery':
-        return 'Modo Recovery';
-      case 'bootloader':
-        return 'Modo Bootloader';
-      default:
-        return 'Desconectado';
+  const getStatusText = (device) => {
+    if (operations[device.id]) {
+      const op = operations[device.id];
+      return `${op.type} - ${op.status} ${op.progress ? `(${op.progress}%)` : ''}`;
     }
+    
+    return device.connected ? 'Conectado' : 'Desconectado';
   };
 
   return (
-    <div className='space-y-6'>
+    <div className="space-y-6">
       {/* Header */}
-      <div className='flex items-center justify-between'>
-        <h2 className='text-2xl font-bold text-gray-900 dark:text-white'>
-          Gerenciamento de Dispositivos
-        </h2>
-        <button
-          onClick={detectDevices}
-          disabled={loading || operationInProgress}
-          className='btn-primary flex items-center space-x-2'
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          <span>Detectar Dispositivos</span>
-        </button>
-      </div>
-
-      {/* Status do ADB */}
-      <div className='card'>
-        <h3 className='text-lg font-medium text-gray-900 dark:text-white mb-4'>
-          Status do Sistema
-        </h3>
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-          <div className='flex items-center space-x-3'>
-            <div
-              className={`w-3 h-3 rounded-full ${socket ? 'bg-success-500' : 'bg-danger-500'}`}
-            ></div>
-            <span className='text-sm text-gray-600 dark:text-gray-400'>
-              WebSocket: {socket ? 'Conectado' : 'Desconectado'}
-            </span>
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Gerenciador de Dispositivos
+            </h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Gerencie e execute operações em dispositivos Android conectados
+            </p>
           </div>
-          <div className='flex items-center space-x-3'>
-            <div className='w-3 h-3 rounded-full bg-blue-500'></div>
-            <span className='text-sm text-gray-600 dark:text-gray-400'>ADB: Disponível</span>
-          </div>
+          
+          <button
+            onClick={detectDevices}
+            disabled={detecting}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {detecting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Detectando...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Detectar Dispositivos
+              </>
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Lista de dispositivos */}
-      <div className='card'>
-        <h3 className='text-lg font-medium text-gray-900 dark:text-white mb-4'>
-          Dispositivos Conectados ({devices.length})
-        </h3>
-
-        {devices.length === 0 ? (
-          <div className='text-center py-12'>
-            <Smartphone className='mx-auto h-12 w-12 text-gray-400' />
-            <h3 className='mt-2 text-sm font-medium text-gray-900 dark:text-white'>
+      {/* Device List */}
+      {devices.length === 0 ? (
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-12">
+          <div className="text-center">
+            <Smartphone className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
               Nenhum dispositivo detectado
             </h3>
-            <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
-              Conecte um dispositivo Android via USB e clique em "Detectar Dispositivos"
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Conecte um dispositivo Android via USB e habilite a depuração USB
             </p>
-          </div>
-        ) : (
-          <div className='space-y-4'>
-            {devices.map(device => (
-              <div
-                key={device.id}
-                className='border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'
+            <div className="mt-6">
+              <button
+                onClick={detectDevices}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                <div className='flex items-center justify-between'>
-                  <div className='flex items-center space-x-3'>
-                    <Smartphone className='h-8 w-8 text-primary-600' />
-                    <div>
-                      <h4 className='text-sm font-medium text-gray-900 dark:text-white'>
-                        {device.model || 'Dispositivo Android'}
-                      </h4>
-                      <div className='flex items-center space-x-2 mt-1'>
-                        {getDeviceStatusIcon(device.status)}
-                        <span className='text-xs text-gray-500 dark:text-gray-400'>
-                          {getDeviceStatusText(device.status)}
-                        </span>
-                        <span className='text-xs text-gray-400 dark:text-gray-500'>
-                          • {device.id}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className='flex items-center space-x-2'>
-                    <button
-                      onClick={() => handleReboot(device.id)}
-                      disabled={operationInProgress}
-                      className='btn-secondary flex items-center space-x-1'
-                      title='Reiniciar dispositivo'
-                    >
-                      <Power className='h-4 w-4' />
-                      <span>Reiniciar</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleClearCache(device.id)}
-                      disabled={operationInProgress}
-                      className='btn-secondary flex items-center space-x-1'
-                      title='Limpar cache'
-                    >
-                      <Trash2 className='h-4 w-4' />
-                      <span>Limpar Cache</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleFactoryReset(device.id)}
-                      disabled={operationInProgress}
-                      className='btn-danger flex items-center space-x-1'
-                      title='Restaurar fábrica'
-                    >
-                      <AlertTriangle className='h-4 w-4' />
-                      <span>Factory Reset</span>
-                    </button>
-                  </div>
-                </div>
-
-                {device.info && (
-                  <div className='mt-3 pt-3 border-t border-gray-200 dark:border-gray-600'>
-                    <div className='grid grid-cols-2 md:grid-cols-4 gap-4 text-xs'>
-                      <div>
-                        <span className='text-gray-500 dark:text-gray-400'>Fabricante:</span>
-                        <p className='text-gray-900 dark:text-white'>
-                          {device.info.manufacturer || 'N/A'}
-                        </p>
-                      </div>
-                      <div>
-                        <span className='text-gray-500 dark:text-gray-400'>Modelo:</span>
-                        <p className='text-gray-900 dark:text-white'>
-                          {device.info.model || 'N/A'}
-                        </p>
-                      </div>
-                      <div>
-                        <span className='text-gray-500 dark:text-gray-400'>Android:</span>
-                        <p className='text-gray-900 dark:text-white'>
-                          {device.info.androidVersion || 'N/A'}
-                        </p>
-                      </div>
-                      <div>
-                        <span className='text-gray-500 dark:text-gray-400'>Status:</span>
-                        <p className='text-gray-900 dark:text-white'>{device.status}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Aviso de segurança */}
-      <div className='card bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'>
-        <div className='flex items-start space-x-3'>
-          <AlertTriangle className='h-6 w-6 text-yellow-600 dark:text-yellow-400 mt-0.5' />
-          <div>
-            <h3 className='text-sm font-medium text-yellow-800 dark:text-yellow-200'>
-              ⚠️ Aviso de Segurança
-            </h3>
-            <p className='mt-1 text-sm text-yellow-700 dark:text-yellow-300'>
-              O Factory Reset irá apagar TODOS os dados do dispositivo Android, incluindo
-              aplicativos, fotos, vídeos e configurações. Esta operação é irreversível.
-              Certifique-se de fazer backup de todos os dados importantes antes de prosseguir.
-            </p>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Tentar Novamente
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+          {devices.map((device) => (
+            <div
+              key={device.id}
+              className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden"
+            >
+              {/* Device Header */}
+              <div className="px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Smartphone className="h-8 w-8 mr-3" />
+                    <div>
+                      <h3 className="text-lg font-semibold">
+                        {device.model || 'Dispositivo Android'}
+                      </h3>
+                      <p className="text-sm opacity-90">{device.manufacturer || 'Fabricante'}</p>
+                    </div>
+                  </div>
+                  {getStatusIcon(device)}
+                </div>
+              </div>
+
+              {/* Device Info */}
+              <div className="px-6 py-4">
+                <dl className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <dt className="text-gray-600 dark:text-gray-400">ID:</dt>
+                    <dd className="font-mono text-gray-900 dark:text-white">{device.id}</dd>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <dt className="text-gray-600 dark:text-gray-400">Android:</dt>
+                    <dd className="text-gray-900 dark:text-white">{device.androidVersion || 'N/A'}</dd>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <dt className="text-gray-600 dark:text-gray-400">Status:</dt>
+                    <dd className="text-gray-900 dark:text-white">{getStatusText(device)}</dd>
+                  </div>
+                  {deviceInfo[device.id]?.batteryInfo && (
+                    <div className="flex justify-between text-sm">
+                      <dt className="text-gray-600 dark:text-gray-400">Bateria:</dt>
+                      <dd className="text-gray-900 dark:text-white">
+                        {deviceInfo[device.id].batteryInfo.level}%
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+
+              {/* Device Actions */}
+              <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => getDeviceInfo(device.id)}
+                    disabled={!device.connected || loading || operations[device.id]}
+                    className="inline-flex items-center justify-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Info className="h-4 w-4 mr-1" />
+                    Info
+                  </button>
+                  
+                  <button
+                    onClick={() => handleReboot(device.id)}
+                    disabled={!device.connected || operations[device.id]}
+                    className="inline-flex items-center justify-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Power className="h-4 w-4 mr-1" />
+                    Reiniciar
+                  </button>
+                  
+                  <button
+                    onClick={() => handleClearCache(device.id)}
+                    disabled={!device.connected || operations[device.id]}
+                    className="inline-flex items-center justify-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Database className="h-4 w-4 mr-1" />
+                    Limpar Cache
+                  </button>
+                  
+                  <button
+                    onClick={() => handleReboot(device.id, 'bootloader')}
+                    disabled={!device.connected || operations[device.id]}
+                    className="inline-flex items-center justify-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    Bootloader
+                  </button>
+                </div>
+                
+                <button
+                  onClick={() => setShowConfirmDialog(device)}
+                  disabled={!device.connected || operations[device.id]}
+                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Factory Reset
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed z-10 inset-0 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 sm:mx-0 sm:h-10 sm:w-10">
+                    <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                      Confirmar Factory Reset
+                    </h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Tem certeza que deseja executar factory reset no dispositivo{' '}
+                        <span className="font-semibold">{showConfirmDialog.model}</span>?
+                      </p>
+                      <p className="mt-2 text-sm text-red-600 dark:text-red-400 font-semibold">
+                        Esta ação é IRREVERSÍVEL e todos os dados serão perdidos!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  onClick={() => handleFactoryReset(showConfirmDialog)}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Confirmar Factory Reset
+                </button>
+                <button
+                  onClick={() => setShowConfirmDialog(null)}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
