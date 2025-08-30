@@ -82,21 +82,36 @@ export const authAPI = {
 export const deviceAPI = {
   list: () => api.get('/devices'),
   detect: () => api.post('/devices/detect'),
-  getInfo: deviceId => api.get(`/devices/${deviceId}`),
+  getInfo: deviceId => api.get(`/devices/${deviceId}/info`),
   rebootToBootloader: deviceId =>
-    api.post(`/devices/${deviceId}/reboot-bootloader`),
+    api.post(`/devices/${deviceId}/reboot`, { mode: 'bootloader' }),
   reboot: deviceId => api.post(`/devices/${deviceId}/reboot`),
+  command: (deviceId, command) => api.post(`/devices/${deviceId}/command`, { command }),
+  screenshot: deviceId => api.post(`/devices/${deviceId}/screenshot`),
+  install: (deviceId, formData) => api.post(`/devices/${deviceId}/install`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  backup: (deviceId, options) => api.post(`/devices/${deviceId}/backup`, options),
+  restore: (deviceId, formData) => api.post(`/devices/${deviceId}/restore`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  packages: (deviceId, type) => api.get(`/devices/${deviceId}/packages${type ? `?type=${type}` : ''}`),
+  uninstall: (deviceId, packageName) => api.delete(`/devices/${deviceId}/packages/${packageName}`),
 };
 
 export const fastbootAPI = {
-  factoryReset: deviceId => api.post('/fastboot/factory-reset', { deviceId }),
-  reboot: deviceId => api.post('/fastboot/reboot', { deviceId }),
-  clearCache: deviceId => api.post('/fastboot/clear-cache', { deviceId }),
-  getStatus: () => api.get('/fastboot/status'),
-  flashImage: (deviceId, formData) =>
-    api.post(`/fastboot/flash/${deviceId}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
+  factoryReset: deviceId => api.post(`/fastboot/factory-reset/${deviceId}`),
+  clearCache: deviceId => api.post(`/fastboot/clear-cache/${deviceId}`),
+  getDevices: () => api.get('/fastboot/devices'),
+  getDeviceInfo: deviceId => api.get(`/fastboot/device-info/${deviceId}`),
+  flashImage: (deviceId, imagePath, partition) =>
+    api.post(`/fastboot/flash/${deviceId}`, { imagePath, partition }),
+  unlockBootloader: (deviceId, confirmation) => 
+    api.post('/fastboot/unlock-bootloader', { deviceId, confirmation }),
+  lockBootloader: deviceId => 
+    api.post('/fastboot/lock-bootloader', { deviceId }),
+  executeCommand: (deviceId, command) =>
+    api.post('/fastboot/command', { deviceId, command }),
 };
 
 export const logsAPI = {

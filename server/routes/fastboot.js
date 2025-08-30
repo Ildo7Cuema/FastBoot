@@ -1,6 +1,12 @@
 const express = require('express');
+const { FastbootManager } = require('../../src/modules/FastbootManager');
+const { Logger } = require('../../src/modules/Logger');
 
 const router = express.Router();
+
+// Inicializar logger e gerenciador de fastboot
+const logger = new Logger();
+const fastbootManager = new FastbootManager(logger);
 
 // Middleware simples para verificar se é admin
 const requireAdmin = (req, res, next) => {
@@ -14,14 +20,19 @@ const requireAdmin = (req, res, next) => {
 // Listar dispositivos em modo fastboot
 router.get('/devices', async (req, res) => {
     try {
-        res.json({ 
-            devices: [
-                { id: 'fastboot-device', status: 'fastboot', model: 'Test Device' }
-            ] 
-        });
+        const fastbootAvailable = await fastbootManager.checkFastbootAvailability();
+        if (!fastbootAvailable) {
+            return res.status(503).json({ 
+                error: 'Fastboot não está disponível. Instale o Android SDK Platform Tools.',
+                instructions: 'Baixe em: https://developer.android.com/studio/releases/platform-tools'
+            });
+        }
+        
+        const devices = await fastbootManager.listFastbootDevices();
+        res.json({ success: true, devices });
     } catch (error) {
-        console.error('Error getting fastboot devices:', error);
-        res.status(500).json({ error: 'Failed to get fastboot devices' });
+        logger.error('Erro ao listar dispositivos fastboot:', error);
+        res.status(500).json({ error: error.message || 'Erro ao listar dispositivos fastboot' });
     }
 });
 
@@ -29,32 +40,55 @@ router.get('/devices', async (req, res) => {
 router.post('/flash/:deviceId', requireAdmin, async (req, res) => {
     try {
         const { deviceId } = req.params;
-        const { imagePath } = req.body;
+        const { imagePath, partition } = req.body;
         
         if (!imagePath) {
-            return res.status(400).json({ error: 'Image path required' });
+            return res.status(400).json({ error: 'Caminho da imagem é obrigatório' });
         }
         
-        res.json({ message: 'Flash initiated successfully', deviceId, imagePath });
+        if (!partition) {
+            return res.status(400).json({ error: 'Partição é obrigatória' });
+        }
+        
+        const command = `flash ${partition} "${imagePath}"`;
+        const result = await fastbootManager.executeFastbootCommand(deviceId, command);
+        
+        res.json({ 
+            success: true,
+            message: 'Flash iniciado com sucesso', 
+            deviceId, 
+            imagePath,
+            partition,
+            output: result 
+        });
     } catch (error) {
-        console.error('Error during flash:', error);
-        res.status(500).json({ error: 'Failed to flash image' });
+        logger.error('Erro durante flash:', error);
+        res.status(500).json({ error: error.message || 'Erro ao executar flash' });
     }
 });
 
 // Unlock bootloader
 router.post('/unlock-bootloader', requireAdmin, async (req, res) => {
     try {
-        const { deviceId } = req.body;
+        const { deviceId, confirmation } = req.body;
         
         if (!deviceId) {
-            return res.status(400).json({ error: 'Device ID required' });
+            return res.status(400).json({ error: 'ID do dispositivo é obrigatório' });
         }
         
-        res.json({ message: 'Bootloader unlock initiated successfully', deviceId });
+        if (!confirmation) {
+            return res.status(400).json({ 
+                error: 'Confirmação explícita é obrigatória',
+                warning: 'Desbloquear o bootloader apagará todos os dados do dispositivo!' 
+            });
+        }
+        
+        const result = await fastbootManager.unlockBootloader(deviceId, confirmation);
+        
+        res.json(result);
     } catch (error) {
-        console.error('Error unlocking bootloader:', error);
-        res.status(500).json({ error: 'Failed to unlock bootloader' });
+        logger.error('Erro ao desbloquear bootloader:', error);
+        res.status(500).json({ error: error.message || 'Erro ao desbloquear bootloader' });
     }
 });
 
@@ -64,13 +98,15 @@ router.post('/lock-bootloader', requireAdmin, async (req, res) => {
         const { deviceId } = req.body;
         
         if (!deviceId) {
-            return res.status(400).json({ error: 'Device ID required' });
+            return res.status(400).json({ error: 'ID do dispositivo é obrigatório' });
         }
         
-        res.json({ message: 'Bootloader lock initiated successfully', deviceId });
+        const result = await fastbootManager.lockBootloader(deviceId);
+        
+        res.json(result);
     } catch (error) {
-        console.error('Error locking bootloader:', error);
-        res.status(500).json({ error: 'Failed to lock bootloader' });
+        logger.error('Erro ao bloquear bootloader:', error);
+        res.status(500).json({ error: error.message || 'Erro ao bloquear bootloader' });
     }
 });
 
@@ -78,17 +114,16 @@ router.post('/lock-bootloader', requireAdmin, async (req, res) => {
 router.get('/device-info/:deviceId', async (req, res) => {
     try {
         const { deviceId } = req.params;
+        
+        const deviceInfo = await fastbootManager.getDeviceInfo(deviceId);
+        
         res.json({ 
-            device: { 
-                id: deviceId, 
-                status: 'fastboot', 
-                model: 'Test Device',
-                bootloaderStatus: 'locked'
-            } 
+            success: true,
+            device: deviceInfo
         });
     } catch (error) {
-        console.error('Error getting fastboot device info:', error);
-        res.status(500).json({ error: 'Failed to get fastboot device info' });
+        logger.error('Erro ao obter informações do dispositivo fastboot:', error);
+        res.status(500).json({ error: error.message || 'Erro ao obter informações do dispositivo' });
     }
 });
 
@@ -98,13 +133,85 @@ router.post('/command', requireAdmin, async (req, res) => {
         const { command, deviceId } = req.body;
         
         if (!command) {
-            return res.status(400).json({ error: 'Command required' });
+            return res.status(400).json({ error: 'Comando é obrigatório' });
         }
         
-        res.json({ message: 'Fastboot command executed successfully', command, deviceId });
+        if (!deviceId) {
+            return res.status(400).json({ error: 'ID do dispositivo é obrigatório' });
+        }
+        
+        const result = await fastbootManager.executeFastbootCommand(deviceId, command);
+        
+        res.json({ 
+            success: true,
+            message: 'Comando fastboot executado com sucesso', 
+            command, 
+            deviceId,
+            output: result 
+        });
     } catch (error) {
-        console.error('Error executing fastboot command:', error);
-        res.status(500).json({ error: 'Failed to execute fastboot command' });
+        logger.error('Erro ao executar comando fastboot:', error);
+        res.status(500).json({ error: error.message || 'Erro ao executar comando fastboot' });
+    }
+});
+
+// Factory reset via fastboot
+router.post('/factory-reset/:deviceId', requireAdmin, async (req, res) => {
+    try {
+        const { deviceId } = req.params;
+        
+        // Emitir evento de início da operação
+        if (req.io) {
+            req.io.emit('operation-progress', {
+                deviceId,
+                type: 'factory-reset',
+                status: 'starting',
+                progress: 0
+            });
+        }
+        
+        const result = await fastbootManager.factoryReset(deviceId);
+        
+        // Emitir evento de conclusão
+        if (req.io) {
+            req.io.emit('operation-complete', {
+                deviceId,
+                success: true,
+                message: 'Factory reset concluído'
+            });
+        }
+        
+        res.json(result);
+    } catch (error) {
+        logger.error('Erro ao executar factory reset:', error);
+        
+        if (req.io) {
+            req.io.emit('operation-complete', {
+                deviceId: req.params.deviceId,
+                success: false,
+                error: error.message
+            });
+        }
+        
+        res.status(500).json({ error: error.message || 'Erro ao executar factory reset' });
+    }
+});
+
+// Limpar cache via fastboot
+router.post('/clear-cache/:deviceId', requireAdmin, async (req, res) => {
+    try {
+        const { deviceId } = req.params;
+        
+        const result = await fastbootManager.executeFastbootCommand(deviceId, 'erase cache');
+        
+        res.json({ 
+            success: true,
+            message: 'Cache limpo com sucesso',
+            output: result
+        });
+    } catch (error) {
+        logger.error('Erro ao limpar cache:', error);
+        res.status(500).json({ error: error.message || 'Erro ao limpar cache' });
     }
 });
 

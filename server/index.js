@@ -23,6 +23,16 @@ const io = socketIo(server, {
     }
 });
 
+// Importar módulos de gerenciamento
+const { AndroidDeviceManager } = require('../src/modules/AndroidDeviceManager');
+const { FastbootManager } = require('../src/modules/FastbootManager');
+const { Logger } = require('../src/modules/Logger');
+
+// Inicializar gerenciadores globais
+const mainLogger = new Logger();
+const deviceManager = new AndroidDeviceManager(mainLogger);
+const fastbootManager = new FastbootManager(mainLogger);
+
 // Configurações de segurança
 app.use(helmet());
 app.use(cors({
@@ -54,6 +64,12 @@ logger.info('Logger inicializado', {
     platform: process.platform,
     arch: process.arch,
     nodeVersion: process.version
+});
+
+// Middleware para adicionar io às requisições
+app.use((req, res, next) => {
+    req.io = io;
+    next();
 });
 
 // Rotas da API
@@ -110,13 +126,31 @@ if (process.env.NODE_ENV === 'production') {
 app.use((err, req, res, next) => {
     logger.error('Global error handler', {
         error: err.message,
+        stack: err.stack,
         url: req.url,
-        method: req.method
+        method: req.method,
+        body: req.body,
+        params: req.params,
+        query: req.query
     });
 
-    res.status(500).json({
-        error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    // Enviar notificação via WebSocket se disponível
+    if (req.io) {
+        req.io.emit('server-error', {
+            message: 'Erro no servidor',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined,
+            timestamp: new Date().toISOString()
+        });
+    }
+
+    // Determinar status code apropriado
+    const statusCode = err.statusCode || err.status || 500;
+    
+    res.status(statusCode).json({
+        success: false,
+        error: err.message || 'Erro interno do servidor',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Algo deu errado',
+        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
     });
 });
 
@@ -124,9 +158,37 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5001;
 const HOST = process.env.HOST || 'localhost';
 
-server.listen(PORT, HOST, () => {
+server.listen(PORT, HOST, async () => {
     logger.info(`Server running on http://${HOST}:${PORT}`);
     logger.info('WebSocket server started');
+    
+    // Verificar disponibilidade de ADB e Fastboot
+    const adbAvailable = await deviceManager.checkAdbAvailability();
+    const fastbootAvailable = await fastbootManager.checkFastbootAvailability();
+    
+    if (adbAvailable) {
+        logger.info('ADB está disponível');
+        // Iniciar monitoramento de dispositivos
+        deviceManager.startDeviceMonitoring();
+        
+        // Configurar eventos de dispositivos
+        setInterval(async () => {
+            try {
+                const devices = await deviceManager.detectDevices();
+                io.emit('devices-update', { devices });
+            } catch (error) {
+                logger.error('Erro no monitoramento de dispositivos:', error);
+            }
+        }, 5000); // Atualizar a cada 5 segundos
+    } else {
+        logger.warn('ADB não está disponível. Funcionalidades de dispositivos limitadas.');
+    }
+    
+    if (fastbootAvailable) {
+        logger.info('Fastboot está disponível');
+    } else {
+        logger.warn('Fastboot não está disponível. Funcionalidades de fastboot limitadas.');
+    }
 });
 
 // Graceful shutdown
