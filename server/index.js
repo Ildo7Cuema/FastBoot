@@ -7,6 +7,10 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config();
 
+// Importar managers
+const { AndroidDeviceManager } = require('../src/modules/AndroidDeviceManager');
+const { FastbootManager } = require('../src/modules/FastbootManager');
+
 // Importar rotas
 const authRoutes = require('./routes/auth');
 const deviceRoutes = require('./routes/devices');
@@ -58,6 +62,15 @@ logger.info('Logger inicializado', {
     arch: process.arch,
     nodeVersion: process.version
 });
+
+// Instanciar managers
+const androidDeviceManager = new AndroidDeviceManager(logger);
+const fastbootManager = new FastbootManager(logger);
+
+// Disponibilizar managers para as rotas
+app.locals.androidDeviceManager = androidDeviceManager;
+app.locals.fastbootManager = fastbootManager;
+app.locals.io = io;
 
 // Rotas da API
 app.use('/api/auth', authRoutes);

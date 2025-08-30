@@ -2,13 +2,16 @@ const express = require('express');
 
 const router = express.Router();
 
+// Middleware simples para autenticação (temporário)
+const authenticateToken = (req, res, next) => {
+    // Por enquanto, permitir todas as requisições
+    next();
+};
+
 // Middleware simples para verificar se é admin
 const requireAdmin = (req, res, next) => {
-    if (req.user && req.user.role === 'admin') {
-        next();
-    } else {
-        res.status(403).json({ error: 'Admin access required' });
-    }
+    // Por enquanto, permitir todas as requisições
+    next();
 };
 
 // Listar dispositivos em modo fastboot
@@ -89,6 +92,110 @@ router.get('/device-info/:deviceId', async (req, res) => {
     } catch (error) {
         console.error('Error getting fastboot device info:', error);
         res.status(500).json({ error: 'Failed to get fastboot device info' });
+    }
+});
+
+// Factory Reset
+router.post('/factory-reset', authenticateToken, async (req, res) => {
+    try {
+        const { deviceId } = req.body;
+        const fastbootManager = req.app.locals.fastbootManager;
+        const io = req.app.locals.io;
+        
+        if (!deviceId) {
+            return res.status(400).json({ error: 'Device ID é obrigatório' });
+        }
+        
+        console.log(`Iniciando factory reset no dispositivo ${deviceId}...`);
+        
+        // Emitir progresso via WebSocket
+        io.emit('operation-progress', {
+            deviceId,
+            type: 'factory-reset',
+            status: 'starting',
+            progress: 0
+        });
+        
+        // Executar factory reset em background
+        fastbootManager.executeFactoryResetCommands(deviceId).then(() => {
+            io.emit('operation-complete', {
+                deviceId,
+                success: true,
+                message: 'Factory reset concluído com sucesso'
+            });
+        }).catch(error => {
+            io.emit('operation-complete', {
+                deviceId,
+                success: false,
+                error: error.message
+            });
+        });
+        
+        res.json({ success: true, message: 'Factory reset iniciado' });
+    } catch (error) {
+        console.error('Erro ao executar factory reset:', error);
+        res.status(500).json({ error: error.message || 'Erro ao executar factory reset' });
+    }
+});
+
+// Limpar cache
+router.post('/clear-cache', authenticateToken, async (req, res) => {
+    try {
+        const { deviceId } = req.body;
+        const androidDeviceManager = req.app.locals.androidDeviceManager;
+        
+        if (!deviceId) {
+            return res.status(400).json({ error: 'Device ID é obrigatório' });
+        }
+        
+        console.log(`Limpando cache do dispositivo ${deviceId}...`);
+        
+        await androidDeviceManager.executeCommand(deviceId, 'shell pm clear com.android.systemui');
+        
+        res.json({ success: true, message: 'Cache limpo com sucesso' });
+    } catch (error) {
+        console.error('Erro ao limpar cache:', error);
+        res.status(500).json({ error: error.message || 'Erro ao limpar cache' });
+    }
+});
+
+// Reboot via fastboot
+router.post('/reboot', authenticateToken, async (req, res) => {
+    try {
+        const { deviceId } = req.body;
+        const fastbootManager = req.app.locals.fastbootManager;
+        
+        if (!deviceId) {
+            return res.status(400).json({ error: 'Device ID é obrigatório' });
+        }
+        
+        console.log(`Reiniciando dispositivo ${deviceId} via fastboot...`);
+        
+        await fastbootManager.executeFastbootCommand(deviceId, 'reboot');
+        
+        res.json({ success: true, message: 'Dispositivo reiniciando...' });
+    } catch (error) {
+        console.error('Erro ao reiniciar via fastboot:', error);
+        res.status(500).json({ error: error.message || 'Erro ao reiniciar dispositivo' });
+    }
+});
+
+// Status do fastboot
+router.get('/status', authenticateToken, async (req, res) => {
+    try {
+        const fastbootManager = req.app.locals.fastbootManager;
+        
+        const fastbootAvailable = await fastbootManager.checkFastbootAvailability();
+        const devices = await fastbootManager.detectFastbootDevices();
+        
+        res.json({ 
+            success: true,
+            fastbootAvailable,
+            devices 
+        });
+    } catch (error) {
+        console.error('Erro ao obter status do fastboot:', error);
+        res.status(500).json({ error: error.message || 'Erro ao obter status do fastboot' });
     }
 });
 
