@@ -31,41 +31,39 @@ const upload = multer({ storage: storage });
 router.post('/detect', authenticateToken, async (req, res) => {
     try {
         console.log('Detectando dispositivos...');
+        const androidDeviceManager = req.app.locals.androidDeviceManager;
         
-        const devices = [
-            {
-                id: 'device-001',
-                name: 'Android Device',
-                status: 'connected',
-                type: 'android',
-                serial: 'ABC123DEF456'
-            }
-        ];
+        // Verificar se ADB está disponível
+        const adbAvailable = await androidDeviceManager.checkAdbAvailability();
+        if (!adbAvailable) {
+            return res.status(500).json({ 
+                success: false, 
+                error: 'ADB não está disponível. Por favor, instale o Android SDK Platform Tools.' 
+            });
+        }
+        
+        // Detectar dispositivos reais
+        const devices = await androidDeviceManager.detectDevices();
         
         res.json({ success: true, devices });
     } catch (error) {
         console.error('Erro ao detectar dispositivos:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        res.status(500).json({ error: error.message || 'Erro ao detectar dispositivos' });
     }
 });
 
 // Rota para listar dispositivos
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const devices = [
-            {
-                id: 'device-001',
-                name: 'Android Device',
-                status: 'connected',
-                type: 'android',
-                serial: 'ABC123DEF456'
-            }
-        ];
+        const androidDeviceManager = req.app.locals.androidDeviceManager;
+        
+        // Detectar dispositivos reais
+        const devices = await androidDeviceManager.detectDevices();
         
         res.json({ success: true, devices });
     } catch (error) {
         console.error('Erro ao listar dispositivos:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        res.status(500).json({ error: error.message || 'Erro ao listar dispositivos' });
     }
 });
 
@@ -73,25 +71,19 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/:deviceId', authenticateToken, async (req, res) => {
     try {
         const { deviceId } = req.params;
+        const androidDeviceManager = req.app.locals.androidDeviceManager;
         
-        const device = {
-            id: deviceId,
-            name: 'Android Device',
-            status: 'connected',
-            type: 'android',
-            serial: 'ABC123DEF456',
-            battery: 85,
-            storage: {
-                total: '64GB',
-                used: '32GB',
-                free: '32GB'
-            }
-        };
+        // Obter informações detalhadas do dispositivo
+        const deviceInfo = await androidDeviceManager.getDeviceInfo(deviceId);
         
-        res.json({ success: true, device });
+        if (!deviceInfo) {
+            return res.status(404).json({ error: 'Dispositivo não encontrado' });
+        }
+        
+        res.json({ success: true, ...deviceInfo });
     } catch (error) {
         console.error('Erro ao obter informações do dispositivo:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        res.status(500).json({ error: error.message || 'Erro ao obter informações do dispositivo' });
     }
 });
 
@@ -99,13 +91,33 @@ router.get('/:deviceId', authenticateToken, async (req, res) => {
 router.post('/:deviceId/reboot', authenticateToken, async (req, res) => {
     try {
         const { deviceId } = req.params;
+        const androidDeviceManager = req.app.locals.androidDeviceManager;
         
         console.log(`Reiniciando dispositivo ${deviceId}...`);
+        
+        await androidDeviceManager.rebootDevice(deviceId);
         
         res.json({ success: true, message: 'Dispositivo reiniciando...' });
     } catch (error) {
         console.error('Erro ao reiniciar dispositivo:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        res.status(500).json({ error: error.message || 'Erro ao reiniciar dispositivo' });
+    }
+});
+
+// Rota para reiniciar dispositivo em modo bootloader
+router.post('/:deviceId/reboot-bootloader', authenticateToken, async (req, res) => {
+    try {
+        const { deviceId } = req.params;
+        const androidDeviceManager = req.app.locals.androidDeviceManager;
+        
+        console.log(`Reiniciando dispositivo ${deviceId} em modo bootloader...`);
+        
+        await androidDeviceManager.rebootToBootloader(deviceId);
+        
+        res.json({ success: true, message: 'Dispositivo reiniciando em modo bootloader...' });
+    } catch (error) {
+        console.error('Erro ao reiniciar em modo bootloader:', error);
+        res.status(500).json({ error: error.message || 'Erro ao reiniciar em modo bootloader' });
     }
 });
 
