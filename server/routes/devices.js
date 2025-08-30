@@ -1,8 +1,14 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const { AndroidDeviceManager } = require('../../src/modules/AndroidDeviceManager');
+const { Logger } = require('../../src/modules/Logger');
 
 const router = express.Router();
+
+// Inicializar logger e gerenciador de dispositivos
+const logger = new Logger();
+const deviceManager = new AndroidDeviceManager(logger);
 
 // Middleware simples para autenticação (temporário)
 const authenticateToken = (req, res, next) => {
@@ -30,68 +36,54 @@ const upload = multer({ storage: storage });
 // Rota para detectar dispositivos conectados
 router.post('/detect', authenticateToken, async (req, res) => {
     try {
-        console.log('Detectando dispositivos...');
+        logger.info('Detectando dispositivos conectados...');
         
-        const devices = [
-            {
-                id: 'device-001',
-                name: 'Android Device',
-                status: 'connected',
-                type: 'android',
-                serial: 'ABC123DEF456'
-            }
-        ];
+        // Verificar se ADB está disponível
+        const adbAvailable = await deviceManager.checkAdbAvailability();
+        if (!adbAvailable) {
+            return res.status(503).json({ 
+                error: 'ADB não está disponível. Instale o Android SDK Platform Tools.',
+                instructions: 'Baixe em: https://developer.android.com/studio/releases/platform-tools'
+            });
+        }
+        
+        // Detectar dispositivos reais
+        const devices = await deviceManager.detectDevices();
+        
+        // Emitir evento via websocket
+        if (req.io) {
+            req.io.emit('devices-detected', { devices });
+        }
         
         res.json({ success: true, devices });
     } catch (error) {
-        console.error('Erro ao detectar dispositivos:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        logger.error('Erro ao detectar dispositivos:', error);
+        res.status(500).json({ error: error.message || 'Erro ao detectar dispositivos' });
     }
 });
 
 // Rota para listar dispositivos
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const devices = [
-            {
-                id: 'device-001',
-                name: 'Android Device',
-                status: 'connected',
-                type: 'android',
-                serial: 'ABC123DEF456'
-            }
-        ];
-        
+        // Retornar dispositivos já detectados
+        const devices = Array.from(deviceManager.devices.values());
         res.json({ success: true, devices });
     } catch (error) {
-        console.error('Erro ao listar dispositivos:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        logger.error('Erro ao listar dispositivos:', error);
+        res.status(500).json({ error: error.message || 'Erro ao listar dispositivos' });
     }
 });
 
 // Rota para obter informações de um dispositivo específico
-router.get('/:deviceId', authenticateToken, async (req, res) => {
+router.get('/:deviceId/info', authenticateToken, async (req, res) => {
     try {
         const { deviceId } = req.params;
         
-        const device = {
-            id: deviceId,
-            name: 'Android Device',
-            status: 'connected',
-            type: 'android',
-            serial: 'ABC123DEF456',
-            battery: 85,
-            storage: {
-                total: '64GB',
-                used: '32GB',
-                free: '32GB'
-            }
-        };
-        
-        res.json({ success: true, device });
+        const deviceInfo = await deviceManager.getDeviceInfo(deviceId);
+        res.json({ success: true, data: deviceInfo });
     } catch (error) {
-        console.error('Erro ao obter informações do dispositivo:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        logger.error('Erro ao obter informações do dispositivo:', error);
+        res.status(500).json({ error: error.message || 'Erro ao obter informações do dispositivo' });
     }
 });
 
@@ -99,13 +91,24 @@ router.get('/:deviceId', authenticateToken, async (req, res) => {
 router.post('/:deviceId/reboot', authenticateToken, async (req, res) => {
     try {
         const { deviceId } = req.params;
+        const { mode } = req.body;
         
-        console.log(`Reiniciando dispositivo ${deviceId}...`);
+        let result;
+        if (mode === 'bootloader') {
+            result = await deviceManager.rebootToBootloader(deviceId);
+        } else {
+            result = await deviceManager.rebootDevice(deviceId);
+        }
         
-        res.json({ success: true, message: 'Dispositivo reiniciando...' });
+        // Emitir evento via websocket
+        if (req.io) {
+            req.io.emit('device-reboot', { deviceId, mode });
+        }
+        
+        res.json(result);
     } catch (error) {
-        console.error('Erro ao reiniciar dispositivo:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        logger.error('Erro ao reiniciar dispositivo:', error);
+        res.status(500).json({ error: error.message || 'Erro ao reiniciar dispositivo' });
     }
 });
 
@@ -119,12 +122,11 @@ router.post('/:deviceId/command', authenticateToken, requireAdmin, async (req, r
             return res.status(400).json({ error: 'Comando não especificado' });
         }
         
-        console.log(`Executando comando '${command}' no dispositivo ${deviceId}...`);
-        
-        res.json({ success: true, output: 'Comando executado com sucesso' });
+        const result = await deviceManager.executeCommand(deviceId, command);
+        res.json({ success: true, ...result });
     } catch (error) {
-        console.error('Erro ao executar comando:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        logger.error('Erro ao executar comando:', error);
+        res.status(500).json({ error: error.message || 'Erro ao executar comando' });
     }
 });
 
@@ -133,12 +135,17 @@ router.post('/:deviceId/screenshot', authenticateToken, async (req, res) => {
     try {
         const { deviceId } = req.params;
         
-        console.log(`Capturando screenshot do dispositivo ${deviceId}...`);
+        const screenshotData = await deviceManager.captureScreenshot(deviceId);
         
-        res.json({ success: true, message: 'Screenshot capturado com sucesso' });
+        // Enviar screenshot como base64
+        res.json({ 
+            success: true, 
+            data: screenshotData.toString('base64'),
+            mimeType: 'image/png'
+        });
     } catch (error) {
-        console.error('Erro ao capturar screenshot:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        logger.error('Erro ao capturar screenshot:', error);
+        res.status(500).json({ error: error.message || 'Erro ao capturar screenshot' });
     }
 });
 
@@ -152,12 +159,15 @@ router.post('/:deviceId/install', authenticateToken, upload.single('apk'), async
             return res.status(400).json({ error: 'Nenhum arquivo APK enviado' });
         }
         
-        console.log(`Instalando APK no dispositivo ${deviceId}...`);
+        const result = await deviceManager.installAPK(deviceId, file.path);
         
-        res.json({ success: true, message: 'APK instalado com sucesso' });
+        // Limpar arquivo temporário
+        require('fs').unlink(file.path, () => {});
+        
+        res.json(result);
     } catch (error) {
-        console.error('Erro ao instalar APK:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        logger.error('Erro ao instalar APK:', error);
+        res.status(500).json({ error: error.message || 'Erro ao instalar APK' });
     }
 });
 
@@ -165,13 +175,25 @@ router.post('/:deviceId/install', authenticateToken, upload.single('apk'), async
 router.post('/:deviceId/backup', authenticateToken, async (req, res) => {
     try {
         const { deviceId } = req.params;
+        const { includeApk, includeObb, includeShared, includeSystem } = req.body;
         
-        console.log(`Criando backup do dispositivo ${deviceId}...`);
+        const options = {
+            includeApk: includeApk || false,
+            includeObb: includeObb || false,
+            includeShared: includeShared || false,
+            includeSystem: includeSystem || false
+        };
         
-        res.json({ success: true, message: 'Backup criado com sucesso' });
+        const backupPath = await deviceManager.createBackup(deviceId, options);
+        
+        res.json({ 
+            success: true, 
+            message: 'Backup criado com sucesso',
+            backupPath 
+        });
     } catch (error) {
-        console.error('Erro ao criar backup:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        logger.error('Erro ao criar backup:', error);
+        res.status(500).json({ error: error.message || 'Erro ao criar backup' });
     }
 });
 
@@ -185,12 +207,15 @@ router.post('/:deviceId/restore', authenticateToken, upload.single('backup'), as
             return res.status(400).json({ error: 'Nenhum arquivo de backup enviado' });
         }
         
-        console.log(`Restaurando backup no dispositivo ${deviceId}...`);
+        const result = await deviceManager.restoreBackup(deviceId, file.path);
         
-        res.json({ success: true, message: 'Backup restaurado com sucesso' });
+        // Limpar arquivo temporário
+        require('fs').unlink(file.path, () => {});
+        
+        res.json(result);
     } catch (error) {
-        console.error('Erro ao restaurar backup:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        logger.error('Erro ao restaurar backup:', error);
+        res.status(500).json({ error: error.message || 'Erro ao restaurar backup' });
     }
 });
 
@@ -198,17 +223,14 @@ router.post('/:deviceId/restore', authenticateToken, upload.single('backup'), as
 router.get('/:deviceId/packages', authenticateToken, async (req, res) => {
     try {
         const { deviceId } = req.params;
+        const { type } = req.query; // all, system, third-party
         
-        const packages = [
-            'com.android.settings',
-            'com.google.android.apps.maps',
-            'com.whatsapp'
-        ];
+        const packages = await deviceManager.getInstalledPackages(deviceId, type || 'all');
         
         res.json({ success: true, packages });
     } catch (error) {
-        console.error('Erro ao listar pacotes:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        logger.error('Erro ao listar pacotes:', error);
+        res.status(500).json({ error: error.message || 'Erro ao listar pacotes' });
     }
 });
 
@@ -217,12 +239,12 @@ router.delete('/:deviceId/packages/:packageName', authenticateToken, requireAdmi
     try {
         const { deviceId, packageName } = req.params;
         
-        console.log(`Desinstalando pacote ${packageName} do dispositivo ${deviceId}...`);
+        const result = await deviceManager.uninstallPackage(deviceId, packageName);
         
-        res.json({ success: true, message: 'Pacote desinstalado com sucesso' });
+        res.json(result);
     } catch (error) {
-        console.error('Erro ao desinstalar pacote:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        logger.error('Erro ao desinstalar pacote:', error);
+        res.status(500).json({ error: error.message || 'Erro ao desinstalar pacote' });
     }
 });
 
