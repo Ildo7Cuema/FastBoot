@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import io from 'socket.io-client';
 
-const SOCKET_URL = process.env.REACT_APP_WS_URL || 'http://localhost:5000';
+const SOCKET_URL = process.env.REACT_APP_WS_URL || 'http://localhost:5001';
 const RECONNECT_DELAY = 3000;
 const MAX_RECONNECT_ATTEMPTS = 5;
 

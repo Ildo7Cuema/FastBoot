@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 
 // Criar instância do axios com configurações padrão
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5001/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -73,6 +73,10 @@ export const authAPI = {
   verify: () => api.get('/auth/verify'),
   logout: () => api.post('/auth/logout'),
   changePassword: data => api.post('/auth/change-password', data),
+  register: data => api.post('/auth/register', data),
+  getUsers: () => api.get('/auth/users'),
+  updateUser: (userId, data) => api.put(`/auth/users/${userId}`, data),
+  deactivateUser: userId => api.delete(`/auth/users/${userId}`),
 };
 
 export const deviceAPI = {

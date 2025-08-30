@@ -12,6 +12,7 @@ const authRoutes = require('./routes/auth');
 const deviceRoutes = require('./routes/devices');
 const fastbootRoutes = require('./routes/fastboot');
 const logRoutes = require('./routes/logs');
+const systemRoutes = require('./routes/system');
 
 const app = express();
 const server = http.createServer(app);
@@ -60,11 +61,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api/fastboot', fastbootRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/system', systemRoutes);
 
 // Rota de health check
 app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
+    res.json({
+        status: 'OK',
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
     });
@@ -73,23 +75,23 @@ app.get('/api/health', (req, res) => {
 // WebSocket events
 io.on('connection', (socket) => {
     logger.info('WebSocket client connected', { socketId: socket.id });
-    
+
     socket.on('disconnect', () => {
         logger.info('WebSocket client disconnected', { socketId: socket.id });
     });
-    
+
     socket.on('device-operation', async (data) => {
         try {
             const { operation, deviceId, ...params } = data;
             let result = { message: `${operation} initiated for device ${deviceId}` };
-            
+
             socket.emit('operation-result', { operation, deviceId, result });
         } catch (error) {
             logger.error('Error in device operation', { error: error.message, operation: data.operation });
-            socket.emit('operation-result', { 
-                operation: data.operation, 
-                deviceId: data.deviceId, 
-                error: error.message 
+            socket.emit('operation-result', {
+                operation: data.operation,
+                deviceId: data.deviceId,
+                error: error.message
             });
         }
     });
@@ -98,7 +100,7 @@ io.on('connection', (socket) => {
 // Em produção, servir arquivos estáticos do frontend
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../client/dist')));
-    
+
     app.get('*', (req, res) => {
         res.sendFile(path.join(__dirname, '../client/dist/index.html'));
     });
@@ -106,13 +108,13 @@ if (process.env.NODE_ENV === 'production') {
 
 // Tratamento de erros global
 app.use((err, req, res, next) => {
-    logger.error('Global error handler', { 
-        error: err.message, 
+    logger.error('Global error handler', {
+        error: err.message,
         url: req.url,
         method: req.method
     });
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
         error: 'Internal server error',
         message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
     });

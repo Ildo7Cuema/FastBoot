@@ -15,6 +15,10 @@ const Dashboard = lazy(() => import('./components/Dashboard'));
 const DeviceManager = lazy(() => import('./components/DeviceManager'));
 const LogsViewer = lazy(() => import('./components/LogsViewer'));
 const Settings = lazy(() => import('./components/Settings'));
+const Users = lazy(() => import('./components/Users'));
+const Security = lazy(() => import('./components/Security'));
+const Monitoring = lazy(() => import('./components/Monitoring'));
+const Backup = lazy(() => import('./components/Backup'));
 
 function App() {
   const [user, setUser] = useState(null);
@@ -96,6 +100,7 @@ function App() {
     setDevices([]);
     setToken(null);
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
   };
 
   if (loading) {
@@ -143,6 +148,10 @@ function App() {
                     <Route index element={<DeviceManager />} />
                     <Route path='devices' element={<DeviceManager />} />
                     <Route path='logs' element={<LogsViewer />} />
+                    <Route path='users' element={<Users />} />
+                    <Route path='security' element={<Security />} />
+                    <Route path='monitoring' element={<Monitoring />} />
+                    <Route path='backup' element={<Backup />} />
                     <Route path='settings' element={<Settings />} />
                   </Route>
                   <Route path='*' element={<Navigate to='/' />} />
