@@ -328,8 +328,13 @@ const Settings = () => {
               </h3>
               <div className='space-y-1 text-sm text-gray-600 dark:text-gray-400'>
                 <p>Versão: 1.0.0</p>
-                <p>Node.js: {process.version}</p>
-                <p>Ambiente: {process.env.NODE_ENV}</p>
+                <p>Navegador: {navigator.userAgent.split(' ')[0]}</p>
+                <p>
+                  Ambiente:{' '}
+                  {window.location.hostname === 'localhost'
+                    ? 'development'
+                    : 'production'}
+                </p>
               </div>
             </div>
 
